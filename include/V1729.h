@@ -38,6 +38,20 @@
 #define V1729_VERNIER_DEPH 65536
 
 //--------------------------
+typedef struct cur_status_t
+{
+  uint32_t  addr ;     // Address
+  uint32_t  data ;     // Data
+  unsigned short    level ;    // Interrupt level
+  unsigned char   irqstat;     // IRQ status
+  unsigned short    am ;       // Addressing Mode
+  CVDataWidth dtsize ; // Data Format
+  uint32_t  base_addr ;  // Base Address
+  uint32_t  blts ;     // Block size for blt (bytes)
+  unsigned short    num_cyc ;     // Number of cycles
+  unsigned short    autoinc ;  // Auto increment address
+  uint32_t  *buff ;    // Mmemory buffer for blt
+} cur_status;
 
 
 // ###########################################################################

@@ -2,26 +2,18 @@
 /* created 14.10.2009 by Franco.LARI     */
 
 #define __LINUX__
+#include <stdlib.h>
 #include <math.h>
 #include <stdio.h>
-#include "CAENVMELib.h"
+#include <ctype.h>
+#include <stdint.h>
+#include <inttypes.h>
+#include <stdarg.h>
+#include <math.h>
+#include <string.h>
+
+#include "CAENVMElib.h"
 #include "V1729.h"
-
-typedef struct cur_status
-{
-  uint32_t  addr ;     // Address
-  uint32_t  data ;     // Data
-  ushort    level ;    // Interrupt level
-  uchar   irqstat;     // IRQ status
-  ushort    am ;       // Addressing Mode
-  CVDataWidth dtsize ; // Data Format
-  uint32_t  base_addr ;  // Base Address
-  uint32_t  blts ;     // Block size for blt (bytes)
-  ushort    num_cyc ;     // Number of cycles
-  ushort    autoinc ;  // Auto increment address
-  uint32_t  *buff ;    // Mmemory buffer for blt
-} cur_status;
-
 
 void read(int32_t handle, cur_status *status)
 {
@@ -83,7 +75,7 @@ void write(int32_t handle, cur_status *status)
 
   for (i=0; ( (status->num_cyc == 0) || (i < status->num_cyc) ) && !kbhit(); i++) 
   {
-    ret = CAENVME_WriteCycle(handle, status->addr, status->data, status->am, status->dtsize);
+    ret = CAENVME_WriteCycle(handle, status->addr, &status->data, status->am, status->dtsize);
 
     if((i==0) || (ret != old_ret))
     {
@@ -120,7 +112,7 @@ void vernier(int32_t handle, cur_status *status)
 {
   int i, tp, col, mask;
 
-  reset();
+  reset(handle, &status);
 
   status->addr = status->base_addr + V1729_TRIGGER_TYPE;
   read(handle, &status);
@@ -397,17 +389,17 @@ void read_blt(int32_t handle, cur_status *status)
 
 void view_blt_data(int32_t handle, cur_status *status)
 {
-  ushort i;
+  unsigned short i;
   uint32_t ndata;
   uint32_t *d32;
-  ushort *d16;
-  uchar *d8;
+  unsigned short *d16;
+  unsigned char *d8;
   char msg[80];
   FILE *fsave;
 
   d32 = status->buff;
-  d16 = (ushort *)status->buff;
-  d8 = (uchar *)status->buff;
+  d16 = (unsigned short *)status->buff;
+  d8 = (unsigned char *)status->buff;
   dtsize = status->dtsize;
   ndata = status->blts/dtsize;
 
