@@ -207,8 +207,8 @@ void pedestal(int32_t handle, cur_status *status)
   {
     start_acq(handle, &status);
     wait(handle, &status);
-    read_vme_ram(handle &status);
-    mask_buffer(handle &status);
+    read_vme_ram(handle, &status);
+    mask_buffer(handle, &status);
 
     for (j = 0; j < 2560; j++)
       for (ch = 0; ch < 4; ch++)
