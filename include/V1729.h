@@ -73,12 +73,12 @@ typedef struct cur_status_t
 /*###########################################################################
  Function Declarations
 ###########################################################################*/
-  void write(int32_t, cur_status *);
-  void read(int32_t, cur_status *);
+  void write_vme(int32_t, cur_status *);
+  void read_vme(int32_t, cur_status *);
   void reset(int32_t, cur_status *);
   void vernier(int32_t, cur_status *);
   void pedestal(int32_t, cur_status *);
-  void wait(int32_t, cur_status *);
+  int  wait(int32_t, cur_status *);
   void start_acq(int32_t, cur_status *);
   void write_blt(int32_t, cur_status *);
   void read_blt(int32_t, cur_status *);

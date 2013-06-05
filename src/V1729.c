@@ -12,10 +12,53 @@
 #include <math.h>
 #include <string.h>
 
+
+#ifdef WIN32
+    #include <time.h>
+    #include <sys/timeb.h>
+    #include <conio.h>
+    #include <process.h>
+#else
+    #include <unistd.h>
+    #include <sys/time.h>
+    #define Sleep(t)  usleep((t)*1000)
+#endif
+
 #include "CAENVMElib.h"
 #include "V1729.h"
+#include <termios.h>
+#include <fcntl.h> 
 
-void read(int32_t handle, cur_status *status)
+// ############################################################################ 
+int kbhit(void)
+{
+   struct termios oldt, newt;
+   int ch;
+   int oldf;
+
+   tcgetattr(STDIN_FILENO, &oldt);
+   newt = oldt;
+   newt.c_lflag &= ~(ICANON | ECHO);
+   tcsetattr(STDIN_FILENO, TCSANOW, &newt);
+   oldf = fcntl(STDIN_FILENO, F_GETFL, 0);
+   fcntl(STDIN_FILENO, F_SETFL, oldf | O_NONBLOCK);
+
+   ch = getchar();
+
+   tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
+   fcntl(STDIN_FILENO, F_SETFL, oldf);
+
+   if(ch != EOF)
+   {
+      ungetc(ch, stdin);
+      return 1;
+   }
+
+   return 0;
+}
+
+
+void read_vme(int32_t handle, cur_status *status)
 {
   uint32_t i, old_data = 0;
   CVErrorCodes ret, old_ret=cvSuccess;
@@ -65,7 +108,7 @@ void read(int32_t handle, cur_status *status)
   }
 }
 
-void write(int32_t handle, cur_status *status)
+void write_vme(int32_t handle, cur_status *status)
 {
   uint32_t i;
   CVErrorCodes ret, old_ret=cvSuccess;
@@ -105,7 +148,7 @@ void reset(int32_t handle, cur_status *status)
   status->addr = status->base_addr + V1729_RESET_BOARD;
   status->data = 1;
 
-  write(handle, &status); 
+  write_vme(handle, &status); 
 }
 
 void vernier(int32_t handle, cur_status *status)
@@ -115,23 +158,23 @@ void vernier(int32_t handle, cur_status *status)
   reset(handle, &status);
 
   status->addr = status->base_addr + V1729_TRIGGER_TYPE;
-  read(handle, &status);
+  read_vme(handle, &status);
   tp = status->data&0x3f;
   
   status->data = 0x8;
-  write(handle, &status); 
+  write_vme(handle, &status); 
 
   status->addr = status->base_addr + V1729_NB_OF_COLS_TO_READ;
-  read(handle, &status);
+  read_vme(handle, &status);
   col = status->data&0xff;
 
   status->data = 0;
-  write(handle, &status);
+  write_vme(handle, &status);
 
   status->addr = status->base_addr + V1729_CHANNEL_MASK;
-  msk = status->data&0xf;
+  mask = status->data&0xf;
   status->data = 15;
-  write(handle, &status);
+  write_vme(handle, &status);
 
   start_acq(handle, &status);
   wait(handle, &status);
@@ -162,20 +205,20 @@ void vernier(int32_t handle, cur_status *status)
 
   status->addr = status->base_addr + V1729_TRIGGER_TYPE;
   status->data = tp;
-  write(handle, &status);
+  write_vme(handle, &status);
 
   status->addr = status->base_addr + V1729_NB_OF_COLS_TO_READ;
   status->data = col;
-  write(handle, &status);
+  write_vme(handle, &status);
 
   status->addr = status->base_addr + V1729_CHANNEL_MASK;
-  status->data = msk;
-  write(handle, &status);
+  status->data = mask;
+  write_vme(handle, &status);
 }
 
 void pedestal(int32_t handle, cur_status *status)
 {
-  int i, j, k, ch, tp, col, msk;
+  int i, j, k, ch, tp, col, mask;
   float meanpedestal[4];
   meanpedestal[0] = 0;
   meanpedestal[1] = 0;
@@ -183,23 +226,23 @@ void pedestal(int32_t handle, cur_status *status)
   meanpedestal[3] = 0;
 
   status->addr = status->base_addr + V1729_TRIGGER_TYPE;
-  read(handle, &status);
+  read_vme(handle, &status);
   tp = status->data&0x3f;
   
   status->data = 0x8;
-  write(handle, &status); 
+  write_vme(handle, &status); 
 
   status->addr = status->base_addr + V1729_NB_OF_COLS_TO_READ;
-  read(handle, &status);
+  read_vme(handle, &status);
   col = status->data&0xff;
 
   status->data = 128;
-  write(handle, &status);
+  write_vme(handle, &status);
 
   status->addr = status->base_addr + V1729_CHANNEL_MASK;
-  msk = status->data&0xf;
+  mask = status->data&0xf;
   status->data = 15;
-  write(handle, &status);
+  write_vme(handle, &status);
 
   for (k = 0; k < 10252; k++) pattern[k] = 0;
 
@@ -230,15 +273,15 @@ void pedestal(int32_t handle, cur_status *status)
 
   status->addr = status->base_addr + V1729_TRIGGER_TYPE;
   status->data = tp;
-  write(handle, &status);
+  write_vme(handle, &status);
 
   status->addr = status->base_addr + V1729_NB_OF_COLS_TO_READ;
   status->data = col;
-  write(handle, &status);
+  write_vme(handle, &status);
 
   status->addr = status->base_addr + V1729_CHANNEL_MASK;
-  status->data = msk;
-  write(handle, &status);
+  status->data = mask;
+  write_vme(handle, &status);
 }
 
 int wait(int32_t handle, cur_status *status)
@@ -250,7 +293,7 @@ int wait(int32_t handle, cur_status *status)
   while (Interrupt == 0)
     {
     w++;
-    read(handle, &status);
+    read_vme(handle, &status);
     Interrupt = status->data & 1;
     if (w > 0x1fff) return 0; /* time-out */
   }
@@ -258,12 +301,12 @@ return 1;
 }
 
 
-void start_acq(int32_t, cur_status *status)
+void start_acq(int32_t handle, cur_status *status)
 {
-status->addr = status->base_addr + V1729_START_ACQUISITION;
-status->data = 0x00000001;
+   status->addr = status->base_addr + V1729_START_ACQUISITION;
+   status->data = 0x00000001;
 
-write(handle, &status);
+   write_vme(handle, &status);
 
 }
 
@@ -390,6 +433,7 @@ void read_blt(int32_t handle, cur_status *status)
 void view_blt_data(int32_t handle, cur_status *status)
 {
   unsigned short i;
+  unsigned short j;
   uint32_t ndata;
   uint32_t *d32;
   unsigned short *d16;
@@ -400,18 +444,18 @@ void view_blt_data(int32_t handle, cur_status *status)
   d32 = status->buff;
   d16 = (unsigned short *)status->buff;
   d8 = (unsigned char *)status->buff;
-  dtsize = status->dtsize;
+  CVDataWidth dtsize = status->dtsize;
   ndata = status->blts/dtsize;
 
   printf("Enter file name for BLT data : \n");
 
   if ( scanf("%s", msg) == EOF)
-    break;
+    return;
 
   if ( (fsave = fopen(msg, "w")) == NULL )
     printf("Can't open file!");
 
-  for(i = 0; i < ndata; i++)
+  for(j = 0; j < ndata; j++)
   {
     if( dtsize == cvD32 || dtsize == cvD64 )
       fprintf(fsave,"%05u\t%08X\t%-10d\n",j,d32[j],d32[j]);
@@ -429,7 +473,7 @@ void mask_buffer(int32_t handle, cur_status *status)
 int i,mask;
 
   status->addr = status->base_addr + V1729_MODE_REGISTER;
-  read(handle, &status);
+  read_vme(handle, &status);
   if( (status->data & 0x2) == 2 ) mask = 0x3fff; /* 14 bit */
   else mask = 0xfff;/* 12 bit */
 
@@ -448,7 +492,7 @@ void read_vme_ram(int32_t handle, cur_status *status)
   read_blt(handle, &status);
 
   status->addr = status->base_addr + V1729_TRIG_REC;
-  read(handle, &status);
+  read_vme(handle, &status);
   trig_rec = status->addr & 0xFF;
 
 }
@@ -485,14 +529,14 @@ void reorder(void)
 //---------------------------------------------------------------
 void save(int32_t handle, cur_status *status)
 {
-	FILE *ch[4]; 
+  FILE *ch[4]; 
 
   int channel_mask, i, NoC;
   char s[30];
-  NoC = NumberOfCol * 20;
+  NoC = num_cols * 20;
   
   status->addr = status->base_addr + V1729_CHANNEL_MASK; 
-  read(handle, &status);
+  read_vme(handle, &status);
   channel_mask = status->data & 0xf;
 
 
