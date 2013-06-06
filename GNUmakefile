@@ -37,4 +37,5 @@ doc:
 
 clean:
 	rm -f a.out
-
+	rm -f bin/$(TARGET)
+	rm -f lib/*.o
