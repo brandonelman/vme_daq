@@ -14,7 +14,7 @@ CFLAGS += -Iinclude
 
 LDLIBS += -lm -lCAENVME 
 
-OBJS := V1729.o simple.o
+OBJS := V1729.o 
 
 HEADERS := $(OBJS:%.o=$(INCDIR)/%.h)
 LIBS    := $(OBJS:%.o=$(BUILDDIR)/%.o)
