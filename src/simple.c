@@ -79,6 +79,160 @@ int kbhit(void)
    return 0;
 }
 
+/* 
+This function performs the temporal interpolator (vernier) calibration. It is necessary after any changes in the sampling frequency, and is valid for weeks. It's similar to a regular acquisition sequence, except TRIG_REC need not be read. This is the slowest, but most precise calibration method. Could implement the faster method easily if desirable.  
+*/
+int vernier(int32_t handle, unsigned short addr_mode, 
+             CVDataWidth data_size, unsigned int MAXVER[4],
+             unsigned int MINVER[4])
+{
+  uint32_t vme_addr;
+  uint32_t vme_data;
+  CVErrorCodes ret;
+  printf("Attempting to reset board.\n");
+  vme_addr = CAENBASEADDRESS + V1729_RESET_BOARD;
+  vme_data = 1;
+  ret = CAENVME_WriteCycle(handle, vme_addr, &vme_data, addr_mode, data_size); 
+
+  if (ret != cvSuccess)
+  {
+    printf("Reset failed with error %d \n", ret);
+  }  
+
+  else printf("Reset succesfully\n");
+
+  vme_addr = CAENBASEADDRESS + V1729_START_ACQUISITION;
+  vme_data = 1;
+  ret = CAENVME_WriteCycle(handle, vme_addr, &vme_data, addr_mode, data_size); 
+ 
+  if (ret != cvSuccess)
+  {
+    printf("Sending Start Acquisition signal failed with error %d\n", ret);
+  }  
+
+  else printf("Sending Start Acquisition signal succesful\n");
+
+  printf("Waiting for interrupt from V1729A...");
+  unsigned int timeout_counter =  0; 
+  vme_addr = CAENBASEADDRESS + V1729_INTERRUPT;
+  vme_data = 0;
+
+  while(vme_data == 0)
+  {
+    timeout_counter++;
+    ret = CAENVME_ReadCycle(handle, vme_addr, &vme_data, addr_mode, data_size); 
+    vme_data = vme_data & 1;
+
+    if(timeout_counter > 0x1fff)
+    {
+    printf("Wait for interrupt has timed out.\n");
+    CAENVME_End(handle);
+    return 0;
+    }
+  }
+
+  //I don't completely understand everything that's going on here.
+  //This part is mainly a copy+paste of the CAEN Demo version of this 
+  //function.
+  int i;
+  for (i = 0; i < 4; i++)
+  {
+    MAXVER[i] = 0;
+    MINVER[i] = 0xffff;
+  } 
+
+  for (i = 0; i < 1000; i++)
+  {
+    vme_addr = CAENBASEADDRESS + V1729_RAM_DATA_VME;
+    if( (vme_data>>16) < MINVER[3] ) MINVER[3] = (vme_data>>16);
+    if( (vme_data>>16) > MAXVER[3] ) MAXVER[3] = (vme_data>>16);
+    if( (vme_data&0xffff) < MINVER[2] ) MINVER[2] = (vme_data&0xffff);
+    if( (vme_data&0xffff) > MAXVER[2] ) MAXVER[2] = (vme_data&0xffff);
+  }  
+  
+  return 1;
+}
+
+/*This functions gets the pedestals that will later be subtracted
+  during the acquisition. trig_type is passed so as to ensure
+  calling the function doesn't alter the V1729_TRIGGER_TYPE 
+  register, which must be set to random software for this
+  step. */
+/*int get_pedestals(int32_t handle, unsigned short addr_mode,
+                  CVDataWidth data_size, uint32_t trig_type,
+                  int pedestals[V1729_RAM_DEPH]) 
+{
+
+  int i,j,k; //dummy variables for counting
+  uint32_t vme_data;
+  uint32_t vme_addr;
+  float meanpedestal[4];
+
+  meanpedestal[0] = 0;
+  meanpedestal[1] = 0;
+  meanpedestal[2] = 0;
+  meanpedestal[3] = 0;
+ 
+  printf("Setting trigger to random software for finding pedestals...\n"); 
+  vme_addr = CAENBASEADDRESS + V1729_TRIGGER_TYPE;
+  vme_data = 0x8; //trigger randmo sofware
+  ret = CAENVME_WriteCycle(handle, vme_addr, &vme_data, addr_mode, data_size); 
+
+  if (ret != cvSuccess)
+  {
+    printf("Setting trigger type failed with error: %d \n", ret);
+  }  
+
+  else printf("Set Trigger Type successful\n");
+
+  for (i = 0; i < 10252; i++) pedestals[i] = 0 //Initialize pedestal array
+
+  //Doing 50 acquisition runs to get pedestals.
+  for (i = 0; i < 50; i++)
+  {
+    //Send start acquisition signal  
+    vme_addr = CAENBASEADDRESS + V1729_START_ACQUISITION;
+    vme_data = 1;
+    ret = CAENVME_WriteCycle(handle, vme_addr, &vme_data, addr_mode, data_size); 
+   
+    if (ret != cvSuccess)
+    {
+      printf("Sending Start Acquisition signal failed with error %d\n", ret);
+    }  
+
+    else printf("Sending Start Acquisition signal succesful\n");
+
+    //Wait for Interrupt
+    printf("Waiting for interrupt from V1729A...");
+    unsigned int timeout_counter =  0; 
+    vme_addr = CAENBASEADDRESS + V1729_INTERRUPT;
+    vme_data = 0;
+
+    while(vme_data == 0)
+    {
+      timeout_counter++;
+      ret = CAENVME_ReadCycle(handle, vme_addr, &vme_data, addr_mode, data_size); 
+      vme_data = vme_data & 1;
+
+      if(timeout_counter > 0x1fff)
+      {
+      printf("Wait for interrupt has timed out.\n");
+      CAENVME_End(handle);
+      return 0;
+      }
+    }
+
+    //Read VME Ram
+    printf("Attempting to read vme ram");
+    vme_addr = CAENBASEADDRESS + V1729_RAM_DATA_VME; 
+    int count; //number of bytes transferred
+    ret = CAENVME_BLTReadCycle(handle, vme_addr, buffer, , addr_mode,
+                               data_size,  
+  }
+} 
+*/
+ 
+
 
 int main(int argc, void *argv[])
 {
@@ -90,15 +244,21 @@ int main(int argc, void *argv[])
   uint32_t vme_addr; //Address to Access VME Registers
   uint32_t vme_data; //Data holder for writing and reading
   
-  uint32_t trig_lev = 0x6ff; 
-  uint32_t active_channel;
-  uint32_t trig_type;
-  uint32_t num_columns;
-  uint32_t post_trig;
+  uint32_t trig_lev = 0x6ff; //trigger level 
+  uint32_t active_channel; //active channel on the frontend of board
+  uint32_t trig_type; //type of trigger (software, auto, external, etc)
+  uint32_t num_columns; //number of columns to read from MATACQ matrix
+  uint32_t post_trig; //post trigger value
+  int pedestals[V1729_RAM_DEPH];
+  unsigned int MAXVER[4], MINVER[4]; /*Correspond to 
+                                     1/pilot_frequency and the 
+                                     zero of the vernier, 
+                                     respectively. Need help
+                                     understanding these.*/
 
   /* Parameters */
   unsigned short addr_mode = cvA32_U_DATA;
-  unsigned short num_cycles = 1;
+  //unsigned short num_cycles = 1; -> multiple read cycles not implemented yet
   CVDataWidth data_size = cvD32;  
 
   /* Create opaque handle for interacting with VX2718 Board */
@@ -122,6 +282,17 @@ int main(int argc, void *argv[])
   }  
 
   else printf("Reset succesfully\n");
+  
+  printf("Attempting to perform Vernier calibration");
+
+  if (vernier(handle, addr_mode, data_size,
+              MAXVER,  MINVER) != 1)
+  {
+    printf("Failed vernier calibration. \n");
+    return 0;
+  }
+
+  else printf("Successful vernier calibration!");
 
   /* Set Trigger Threshold */
   printf("Attempting to set trigger level\n");
@@ -236,6 +407,13 @@ int main(int argc, void *argv[])
   vme_data = 1;
   ret = CAENVME_WriteCycle(handle, vme_addr, &vme_data, addr_mode, data_size); 
  
+  if (ret != cvSuccess)
+  {
+    printf("Sending Start Acquisition signal failed with error %d\n", ret);
+  }  
+
+  else printf("Sending Start Acquisition signal succesful\n");
+
   //Send Software Trigger after waiting PRETRIG <- Not sure how to wait
   printf("Sending Software Trigger...\n"); 
   vme_data = 1;
@@ -249,6 +427,40 @@ int main(int argc, void *argv[])
   }  
 
   else printf("Sending Software Trigger succesful\n");
+
+  //Wait for Interrupt from V1729A
+  printf("Waiting for interrupt from V1729A...");
+  unsigned int timeout_counter =  0; 
+  vme_addr = CAENBASEADDRESS + V1729_INTERRUPT;
+  vme_data = 0;
+  unsigned int interrupt;
+
+  while(interrupt == 0)
+  {
+    
+    timeout_counter++;
+    ret = CAENVME_ReadCycle(handle, vme_addr, &vme_data, addr_mode, data_size); 
+    interrupt = vme_data & 1;
+
+    if(timeout_counter > 0x1fff)
+    {
+    printf("Wait for interrupt has timed out.\n");
+    CAENVME_End(handle);
+    return 0;
+    }
+  }
+  //After receiving interrupt must acknowledge
+  //by writing 0 in interrupt register.
+  printf("Interrupt found. Attempting to acknowledge..\n");
+  vme_data = 0;
+  ret = CAENVME_WriteCycle(handle, vme_addr, &vme_data, addr_mode, data_size); 
+  if (ret != cvSuccess)
+  {
+    printf("Interrupt Acknowledge failed with error %d\n", ret);
+  }  
+
+  else printf("Interrupt Acknowledged succesfully\n");
+
 
   //Send Reset to End Acquisition
   printf("Attempting to reset board.\n");
