@@ -112,43 +112,43 @@ int main(int argc, void *argv[])
 
 
   /* Send Reset Order to Board  */
-  printf("Attempting to reset board.");
+  printf("Attempting to reset board.\n");
   vme_addr = CAENBASEADDRESS + V1729_RESET_BOARD;
   vme_data = 1;
   ret = CAENVME_WriteCycle(handle, vme_addr, &vme_data, addr_mode, data_size); 
   if (ret != cvSuccess)
   {
-    printf("Reset failed with error %d", ret);
+    printf("Reset failed with error %d \n", ret);
   }  
 
-  else printf("Reset succesfully");
+  else printf("Reset succesfully\n");
 
   /* Set Trigger Threshold */
-  printf("Attempting to set trigger level");
+  printf("Attempting to set trigger level\n");
 
   vme_addr = CAENBASEADDRESS + V1729_THRESHOLD;
   vme_data = trig_lev;
   ret = CAENVME_WriteCycle(handle, vme_addr, &vme_data, addr_mode, data_size); 
   if (ret != cvSuccess)
   {
-    printf("Setting trigger level failed with error %d", ret);
+    printf("Setting trigger level failed with error %d\n", ret);
   }  
 
-  else printf("Trigger level set succesfully");
+  else printf("Trigger level set succesfully\n");
 
   /*From Manual: After loading of V1729_THRESHOLD, one must transfer the
     value in the analog converter via the LOAD_TRIGGER THRESHOLD DAC (09)
     command.*/
-  printf("Attempting to enact LOAD_TRIGGER_THRESHOLD DAC");
+  printf("Attempting to enact LOAD_TRIGGER_THRESHOLD DAC\n");
   vme_addr = CAENBASEADDRESS + V1729_LOAD_TRIGGER_THS;
   vme_data = 1;
   ret = CAENVME_WriteCycle(handle, vme_addr, &vme_data, addr_mode, data_size); 
   if (ret != cvSuccess)
   {
-    printf("Loading trigger threshold command failed with error: %d", ret);
+    printf("Loading trigger threshold command failed with error: %d\n", ret);
   }  
 
-  else printf("Load Trigger threshold command successful");
+  else printf("Load Trigger threshold command successful\n");
 
 /*  printf("Attempting to load pilot frequency"); 
   vme_addr = CAENBASEADDRESS + V1729_FP_FREQUENCY;
@@ -165,7 +165,7 @@ int main(int argc, void *argv[])
 
   //Initializing rest of parameters....
 
-  printf("Attempting to determine number of columns to read from MATACQ ");
+  printf("Attempting to determine number of columns to read from MATACQ \n");
   vme_addr = CAENBASEADDRESS + V1729_NB_OF_COLS_TO_READ;
   ret = CAENVME_ReadCycle(handle, vme_addr, &vme_data, addr_mode, data_size); 
   if (ret != cvSuccess)
@@ -245,30 +245,30 @@ int main(int argc, void *argv[])
 
   if (ret != cvSuccess)
   {
-    printf("Sending Software Trigger failed with error %d", ret);
+    printf("Sending Software Trigger failed with error %d\n", ret);
   }  
 
-  else printf("Sending Software Trigger succesful");
+  else printf("Sending Software Trigger succesful\n");
 
   //Send Reset to End Acquisition
-  printf("Attempting to reset board.");
+  printf("Attempting to reset board.\n");
   vme_addr = CAENBASEADDRESS + V1729_RESET_BOARD;
   vme_data = 1;
   ret = CAENVME_WriteCycle(handle, vme_addr, &vme_data, addr_mode, data_size); 
   if (ret != cvSuccess)
   {
-    printf("Reset failed with error %d", ret);
+    printf("Reset failed with error %d\n", ret);
   }  
 
-  else printf("Reset succesfully");
+  else printf("Reset succesfully\n");
 
   ret = CAENVME_End(handle);  
   if (ret != cvSuccess)
   {
-    printf("Closing board failed with error %d", ret);
+    printf("Closing board failed with error %d\n", ret);
   }  
 
-  else printf("Closed Board succesfully");
+  else printf("Closed Board succesfully\n");
 
  
 }
