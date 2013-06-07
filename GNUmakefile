@@ -22,7 +22,7 @@ LIBS    := $(OBJS:%.o=$(BUILDDIR)/%.o)
 default : main 
 
 simple :  
-	$(CXX) -o $(DESTDIR)/simple src/simple.c $(CFLAGS) $(LDLIBS)  $(LIBS)
+	$(CXX) -o $(DESTDIR)/simple src/simple.c $(CFLAGS) $(LDLIBS) 
 
 main: $(BUILDDIR)/$(OBJS) 
 	$(CXX) -o $(DESTDIR)/$(TARGET) src/main.c $(CFLAGS) $(LDLIBS) $(LIBS)
