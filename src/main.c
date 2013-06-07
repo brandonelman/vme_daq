@@ -37,7 +37,7 @@ int main(int argc, void *argv[])
   status.addr = 0xEE000000;
   status.level = 1;
   status.am = cvA32_U_DATA;
-  status.dtsize = cvD16;
+  status.dtsize = cvD32;
   status.base_addr = 0xEE000000;
   status.blts = 256;
   status.num_cyc = 1;
@@ -66,20 +66,22 @@ int main(int argc, void *argv[])
   status.base_addr = 0x30010000;
 
   /* Send Initial Reset to Boad */
+  printf("Sending reset order to board...\n");
   reset(handle, &status);
 
-
+  printf("Setting trigger level...\n");
   tl = 0x6ff; //Trigger level
   status.addr = status.base_addr + V1729_THRESHOLD;
   status.data = tl;
-  write(handle, &status);
+  write_vme(handle, &status);
 
   status.addr = status.base_addr + V1729_LOAD_TRIGGER_THS;
   status.data = 1;
-  write(handle, &status);
+  write_vme(handle, &status);
 
+  printf("Setting pilot frequency...\n");
   status.addr = status.base_addr + V1729_FP_FREQUENCY;
-  read(handle, &status);
+  read_vme(handle, &status);
 
   status.data = status.data & 0x3f;
   if((status.data&0x3f) == 0x01)fc=1;
@@ -90,16 +92,19 @@ int main(int argc, void *argv[])
   if((status.data&0x3f) == 20)fc=6;
   if((status.data&0x3f) == 40)fc=7; 
 
+  printf("Reading mode register ...\n");
   status.addr = status.base_addr + V1729_MODE_REGISTER;
-  read(handle, &status);
+  read_vme(handle, &status);
   r = (status.data&2)>1;
 
+  printf("Reading number of columns  ...\n");
   status.addr  = status.base_addr + V1729_NB_OF_COLS_TO_READ;
-  read(handle, &status); 
+  read_vme(handle, &status); 
   num_cols = status.data & 0xff;
 
+  printf("Reading Trigger Type  ...\n");
   status.addr  = status.base_addr + V1729_TRIGGER_TYPE;
-  read(handle, &status); 
+  read_vme(handle, &status); 
   tp  = status.data & 0x3f;
 
   t01 = tp&3;
@@ -108,22 +113,24 @@ int main(int argc, void *argv[])
   t04 =(tp&0x10)>>4;
   t05 =(tp&0x20)>>5;
 
-
+  printf("Finding active channel ...\n");
   status.addr  = status.base_addr + V1729_CHANNEL_MASK;
-  read(handle, &status); 
+  read_vme(handle, &status); 
   active_channel  = status.data & 0x3f;
 
+  printf("Reading POSTTRIG....\n");
   status.addr  = status.base_addr + V1729_POSTTRIG_LSB;
-  read(handle, &status); 
+  read_vme(handle, &status); 
   post_trig  = status.data & 0x3f;
 
   status.addr  = status.base_addr + V1729_POSTTRIG_MSB;
-  read(handle, &status); 
+  read_vme(handle, &status); 
   post_trig  = post_trig +  (status.data & 0xFF)*256;
 
+  printf("Setting Software Trigger....\n");
   status.data = 0x00000001;
   status.addr  = status.base_addr + V1729_SOFTWARE_TRIGGER;
-  write(handle, &status);
+  write_vme(handle, &status);
 
   /* Vernier Calibration */
   vernier(handle, &status);
