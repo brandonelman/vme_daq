@@ -21,6 +21,9 @@ LIBS    := $(OBJS:%.o=$(BUILDDIR)/%.o)
 
 default : main 
 
+simple :  
+	$(CXX) -o $(DESTDIR)/simple src/simple.c $(CFLAGS) $(LDLIBS)  $(LIBS)
+
 main: $(BUILDDIR)/$(OBJS) 
 	$(CXX) -o $(DESTDIR)/$(TARGET) src/main.c $(CFLAGS) $(LDLIBS) $(LIBS)
 
@@ -37,4 +40,5 @@ doc:
 
 clean:
 	rm -f a.out
-
+	rm -f bin/$(TARGET)
+	rm -f lib/*.o
