@@ -9,11 +9,15 @@ VME CRATE LAYOUT:
 -----------------
 
  1. VME controller , VX2718 
+    Optical link.
 
- 2. Digitizer , V1729A
+ 2. Waveform Digitizer , V1729A
 
  3. C.F.D., V812
+    Whats CFD? 
 
  4. Leading Edge, V895 
+    Whats Leading Edg?
   
  5. General Purpose VME Board, V1495
+

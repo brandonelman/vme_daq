@@ -14,12 +14,15 @@ CFLAGS += -Iinclude
 
 LDLIBS += -lm -lCAENVME 
 
-OBJS := V1729.o 
+OBJS := V1729.o simple.o
 
 HEADERS := $(OBJS:%.o=$(INCDIR)/%.h)
 LIBS    := $(OBJS:%.o=$(BUILDDIR)/%.o)
 
 default : main 
+
+simple :  
+	$(CXX) -o $(DESTDIR)/simple src/simple.c $(CFLAGS) $(LDLIBS)  $(LIBS)
 
 main: $(BUILDDIR)/$(OBJS) 
 	$(CXX) -o $(DESTDIR)/$(TARGET) src/main.c $(CFLAGS) $(LDLIBS) $(LIBS)
