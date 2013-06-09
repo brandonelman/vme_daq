@@ -82,7 +82,11 @@ int kbhit(void)
 }
 
 /* 
-This function performs the temporal interpolator (vernier) calibration. It is necessary after any changes in the sampling frequency, and is valid for weeks. It's similar to a regular acquisition sequence, except TRIG_REC need not be read. This is the slowest, but most precise calibration method. Could implement the faster method easily if desirable. */
+This function performs the temporal interpolator (vernier) calibration. It is necessary after any changes in the sampling frequency, and is valid for weeks. It's similar to a regular acquisition sequence, except TRIG_REC need not be read. This is the slowest, but most precise calibration method. Could implement the faster method easily if desirable.
+
+UPDATE: Can't seem to find interrupt with more precise method, so attemptign to use faster method instead. */
+
+
 int vernier(int32_t handle, unsigned short addr_mode, 
              CVDataWidth data_size, unsigned int MAXVER[4],
              unsigned int MINVER[4])
@@ -90,48 +94,117 @@ int vernier(int32_t handle, unsigned short addr_mode,
   uint32_t vme_addr;
   uint32_t vme_data;
   CVErrorCodes ret;
-  printf("Attempting to reset board.\n");
+  printf("    Attempting to reset board.\n");
   vme_addr = CAENBASEADDRESS + V1729_RESET_BOARD;
   vme_data = 1;
   ret = CAENVME_WriteCycle(handle, vme_addr, &vme_data, addr_mode, data_size); 
 
   if (ret != cvSuccess)
   {
-    printf("Reset failed with error %d \n", ret);
+    printf("    Reset failed with error %d \n", ret);
   }  
 
-  else printf("Reset succesfully\n");
+  else printf("    Reset succesfully\n");
 
-  vme_addr = CAENBASEADDRESS + V1729_START_ACQUISITION;
-  vme_data = 1;
+  printf("    Setting trigger to random software ...\n"); 
+  vme_addr = CAENBASEADDRESS + V1729_TRIGGER_TYPE;
+  vme_data = 0x8; //trigger random sofware
   ret = CAENVME_WriteCycle(handle, vme_addr, &vme_data, addr_mode, data_size); 
- 
+  
   if (ret != cvSuccess)
   {
-    printf("Sending Start Acquisition signal failed with error %d\n", ret);
+    printf("     Setting trigger type failed with error: %d \n", ret);
+    
     return 0;
   }  
 
-  else printf("Sending Start Acquisition signal succesful\n");
+  else printf("    Set Trigger Type successful\n");
 
-  printf("Waiting for interrupt from V1729A...");
+  printf("    Setting mask to allow 4 Channels ...\n"); 
+  vme_addr = CAENBASEADDRESS + V1729_CHANNEL_MASK;
+  vme_data = 15; //trigger random sofware
+  ret = CAENVME_WriteCycle(handle, vme_addr, &vme_data, addr_mode, data_size); 
+
+  if (ret != cvSuccess)
+  {
+    printf("    Setting channel mask failed with error: %d \n", ret);
+    return 0;
+  }  
+
+  else printf("    Set channel mask successfully\n");
+
+  printf("    Saving number of columns for resetting later..\n");
+  vme_addr = CAENBASEADDRESS + V1729_NB_OF_COLS_TO_READ;
+  ret = CAENVME_ReadCycle(handle, vme_addr, &vme_data, addr_mode, data_size); 
+  if (ret != cvSuccess)
+  {
+    printf("    Loading num. of columns failed with error: %d \n", ret);
+    return 0;
+  }  
+
+  else printf("    Load number of columns successful\n");
+
+  uint32_t cols = vme_data&0xff;
+  vme_data = 0; //Sets # of cols to 0 for fast calibration
+  ret = CAENVME_WriteCycle(handle, vme_addr, &vme_data, addr_mode, data_size); 
+
+  if (ret != cvSuccess)
+  {
+    printf("    Changing num. of columns failed with error: %d \n", ret);
+    return 0;
+  }  
+
+  else printf("    Changing number of columns successful\n");
+
+  //Begins acquisition sequence
+  printf("    Attempting to begin acquisition sequence...\n");
+  vme_addr = CAENBASEADDRESS + V1729_START_ACQUISITION;
+  vme_data = 1;
+  ret = CAENVME_WriteCycle(handle, vme_addr, &vme_data, addr_mode, data_size); 
+   
+  if (ret != cvSuccess)
+  {
+    printf("    Sending Start Acquisition signal failed with error %d\n", ret);
+    return 0;
+  }  
+
+  else printf("    Sending Start Acquisition signal succesful\n");
+
+  printf("    Waiting for interrupt from V1729A...");
   unsigned int timeout_counter =  0; 
   vme_addr = CAENBASEADDRESS + V1729_INTERRUPT;
-  vme_data = 0;
+  unsigned int interrupt = 0;
 
-  while(vme_data == 0)
+  while(interrupt == 0)
   {
     timeout_counter++;
     ret = CAENVME_ReadCycle(handle, vme_addr, &vme_data, addr_mode, data_size); 
-    vme_data = vme_data & 1;
+    interrupt = vme_data & 1;
 
-    if(timeout_counter > 0x1fff)
+    if(timeout_counter > 0x1ffff)
     {
-    printf("Wait for interrupt has timed out.\n");
+    printf(" Wait for interrupt has timed out.\n");
+    //Added reset here so board isn't stuck in acquisition mode after failing. 
+    vme_addr = CAENBASEADDRESS + V1729_RESET_BOARD;
+    vme_data = 1;
+    ret = CAENVME_WriteCycle(handle, vme_addr, &vme_data, addr_mode, data_size); 
     CAENVME_End(handle);
     return 0;
     }
   }
+
+  printf("Resetting columns to read to initial value\n");
+  vme_addr = CAENBASEADDRESS + V1729_NB_OF_COLS_TO_READ;
+  vme_data = cols; //Sets # of cols to 0 for fast calibration
+  ret = CAENVME_WriteCycle(handle, vme_addr, &vme_data, addr_mode, data_size); 
+
+  if (ret != cvSuccess)
+  {
+    printf("    Resetting num. of columns failed with error: %d \n", ret);
+    return 0;
+  }  
+
+  else printf("    Resetting number of columns successful\n");
 
   //I don't completely understand everything that's going on here.
   //This part is mainly a copy+paste from the CAEN Demo version of this 
@@ -180,30 +253,31 @@ int get_pedestals(int32_t handle, unsigned short addr_mode,
   meanpedestal[2] = 0;
   meanpedestal[3] = 0;
  
-  printf("Setting trigger to random software for finding pedestals...\n"); 
+  printf("    Setting trigger to random software for finding pedestals...\n"); 
   vme_addr = CAENBASEADDRESS + V1729_TRIGGER_TYPE;
   vme_data = 0x8; //trigger random sofware
   ret = CAENVME_WriteCycle(handle, vme_addr, &vme_data, addr_mode, data_size); 
   
   if (ret != cvSuccess)
   {
-    printf("Setting trigger type failed with error: %d \n", ret);
+    printf("     Setting trigger type failed with error: %d \n", ret);
+    
     return 0;
   }  
 
-  else printf("Set Trigger Type successful\n");
+  else printf("    Set Trigger Type successful\n");
 
-  printf("Setting mask to allow 4 Channels for finding pedestals...\n"); 
+  printf("    Setting mask to allow 4 Channels for finding pedestals...\n"); 
   vme_addr = CAENBASEADDRESS + V1729_CHANNEL_MASK;
   vme_data = 15; //trigger random sofware
   ret = CAENVME_WriteCycle(handle, vme_addr, &vme_data, addr_mode, data_size); 
   if (ret != cvSuccess)
   {
-    printf("Setting channel mask failed with error: %d \n", ret);
+    printf("    Setting channel mask failed with error: %d \n", ret);
     return 0;
   }  
 
-  else printf("Set channel mask successfully\n");
+  else printf("    Set channel mask successfully\n");
 
   for (i = 0; i < 10252; i++) pedestals[i] = 0; //Initialize pedestal array
 
@@ -217,34 +291,41 @@ int get_pedestals(int32_t handle, unsigned short addr_mode,
    
     if (ret != cvSuccess)
     {
-      printf("Sending Start Acquisition signal failed with error %d\n", ret);
+      printf("    Sending Start Acquisition signal failed with error %d\n", ret);
+
+      vme_addr = CAENBASEADDRESS + V1729_RESET_BOARD;
+      vme_data = 1;
+      ret = CAENVME_WriteCycle(handle, vme_addr, &vme_data, addr_mode, data_size); 
       return 0;
     }  
 
-    else printf("Sending Start Acquisition signal succesful\n");
+    else printf("    Sending Start Acquisition signal succesful\n");
 
     //Wait for Interrupt
-    printf("Waiting for interrupt from V1729A...");
+    printf("    Waiting for interrupt from V1729A...");
     unsigned int timeout_counter =  0; 
     vme_addr = CAENBASEADDRESS + V1729_INTERRUPT;
-    vme_data = 0;
+    unsigned int interrupt = 0;
 
-    while(vme_data == 0)
+    while(interrupt == 0)
     {
       timeout_counter++;
       ret = CAENVME_ReadCycle(handle, vme_addr, &vme_data, addr_mode, data_size); 
-      vme_data = vme_data & 1;
+      interrupt = vme_data & 1;
 
-      if(timeout_counter > 0x1fff)
+      if(timeout_counter > 0x1ffff)
       {
-      printf("Wait for interrupt has timed out.\n");
+      printf("    Wait for interrupt has timed out.\n");
+      vme_addr = CAENBASEADDRESS + V1729_RESET_BOARD;
+      vme_data = 1;
+      ret = CAENVME_WriteCycle(handle, vme_addr, &vme_data, addr_mode, data_size); 
       CAENVME_End(handle);
       return 0;
       }
     }
 
     //Read VME Ram
-    printf("Attempting to read vme ram");
+    printf("    Attempting to read vme ram");
     vme_addr = CAENBASEADDRESS + V1729_RAM_DATA_VME; 
     int count; //number of bytes transferred
     ret = CAENVME_BLTReadCycle(handle, vme_addr, buffer32, V1729_RAM_DEPH/2, 
@@ -252,11 +333,14 @@ int get_pedestals(int32_t handle, unsigned short addr_mode,
 
     if (ret != cvSuccess)
     {
-      printf("Reading VME RAM failed with error %d\n", ret);
+      printf("    Reading VME RAM failed with error %d\n", ret);
+      vme_addr = CAENBASEADDRESS + V1729_RESET_BOARD;
+      vme_data = 1;
+      ret = CAENVME_WriteCycle(handle, vme_addr, &vme_data, addr_mode, data_size); 
       return 0;
     }  
 
-    else printf("Reading VME RAM succesful\n");
+    else printf("    Reading VME RAM succesful\n");
 
     //Mask Buffer
     int c; //New dummy variable for counting 
@@ -266,11 +350,14 @@ int get_pedestals(int32_t handle, unsigned short addr_mode,
     ret = CAENVME_ReadCycle(handle, vme_addr, &vme_data, addr_mode, data_size); 
     if (ret != cvSuccess)
     {
-      printf("Reading Channel Mask failed with error %d\n", ret);
+      printf("     Reading Channel Mask failed with error %d\n", ret);
+      vme_addr = CAENBASEADDRESS + V1729_RESET_BOARD;
+      vme_data = 1;
+      ret = CAENVME_WriteCycle(handle, vme_addr, &vme_data, addr_mode, data_size); 
       return 0;
     }  
 
-    else printf("Reading Channel Mask succesful\n");
+    else printf("    Reading Channel Mask succesful\n");
 
     if( (vme_data & 0x2) == 2) mask = 0x3fff; //14 bit
    
@@ -301,13 +388,16 @@ int get_pedestals(int32_t handle, unsigned short addr_mode,
       pedestals[k*4 + ch] = pedestals[k*4 + ch] - (int)meanpedestal[ch]; 
 
   //Set trig_type back to original value;
-  printf("Resetting trigger to original value after finding pedestals...\n"); 
+  printf("    Resetting trigger to original value after finding pedestals...\n"); 
   vme_addr = CAENBASEADDRESS + V1729_TRIGGER_TYPE;
   vme_data = trig_type; //trigger random sofware
   ret = CAENVME_WriteCycle(handle, vme_addr, &vme_data, addr_mode, data_size); 
   if (ret != cvSuccess)
   {
-    printf("Resetting trigger type failed with error: %d \n", ret);
+    printf("    Resetting trigger type failed with error: %d \n", ret);
+    vme_addr = CAENBASEADDRESS + V1729_RESET_BOARD;
+    vme_data = 1;
+    ret = CAENVME_WriteCycle(handle, vme_addr, &vme_data, addr_mode, data_size); 
     return 0;
   }  
 
@@ -488,18 +578,7 @@ int main(int argc, void *argv[])
   }  
 
   else printf("Reset succesfully\n");
-  
-  printf("Attempting to perform Vernier calibration\n");
 
-  if (vernier(handle, addr_mode, data_size,
-              MAXVER,  MINVER) != 1)
-  {
-    printf("Failed vernier calibration. \n");
-    return 0;
-  }
-
-  else printf("Successful vernier calibration!\n");
-  
   printf("Attempting to determine trigger type...\n");
   vme_addr = CAENBASEADDRESS + V1729_TRIGGER_TYPE;
   ret = CAENVME_ReadCycle(handle, vme_addr, &vme_data, addr_mode, data_size); 
@@ -513,18 +592,7 @@ int main(int argc, void *argv[])
 
   trig_type = vme_data & 0x3f; 
 
-
-  if (get_pedestals(handle, addr_mode, data_size, trig_type, pedestals, buffer32, buffer16) == 0)
-    printf("Failed to get pedestals.\n");
-
-  else printf("Successfully found pedestals"); 
-
-  printf("Please now attach your signal to the board. Press RETURN when ready.");
-  char key = getchar();
-  
-
-
-  /* Set Trigger Threshold */
+   /* Set Trigger Threshold */
   printf("Attempting to set trigger level\n");
 
   vme_addr = CAENBASEADDRESS + V1729_THRESHOLD;
@@ -553,21 +621,6 @@ int main(int argc, void *argv[])
 
   else printf("Load Trigger threshold command successful\n");
 
-/*  printf("Attempting to load pilot frequency"); 
-  vme_addr = CAENBASEADDRESS + V1729_FP_FREQUENCY;
-
-  ret = CAENVME_ReadCycle(handle, vme_addr, &vme_data, addr_mode, data_size); 
-
-  if (ret != cvSuccess)
-  {
-    printf("Loading pilot freq uency failed with error: %d", ret);
-  }  
-
-  else printf("Loading pilot frequency successful");
-  UNNECESSARY: Pilot Frequency defaults to 2Gs/s */
-
-  //Initializing rest of parameters....
-
   printf("Attempting to determine number of columns to read from MATACQ \n");
   vme_addr = CAENBASEADDRESS + V1729_NB_OF_COLS_TO_READ;
   ret = CAENVME_ReadCycle(handle, vme_addr, &vme_data, addr_mode, data_size); 
@@ -583,7 +636,7 @@ int main(int argc, void *argv[])
                                  Default value is 128 so
                                  128&0xff = 128, all the columns */
 
-    printf("Attempting to determine active channel...\n");
+  printf("Attempting to determine active channel...\n");
   vme_addr = CAENBASEADDRESS + V1729_CHANNEL_MASK;
   ret = CAENVME_ReadCycle(handle, vme_addr, &vme_data, addr_mode, data_size); 
   if (ret != cvSuccess)
@@ -626,6 +679,31 @@ int main(int argc, void *argv[])
 
   post_trig = post_trig + (vme_data & 0xFF)*256; 
 
+  printf("Attempting to perform Vernier calibration\n");
+
+  if (vernier(handle, addr_mode, data_size,
+              MAXVER,  MINVER) != 1)
+  {
+    printf("Failed vernier calibration. \n");
+    return 0;
+  }
+
+  else printf("Successful vernier calibration!\n");
+  
+
+  if (get_pedestals(handle, addr_mode, data_size, trig_type, pedestals, buffer32, buffer16) == 0)
+  {
+    printf("Failed to get pedestals.\n");
+    CAENVME_End(handle);
+    return 0;
+  }
+  else printf("Successfully found pedestals"); 
+
+  printf("Please now attach your signal to the board. Press RETURN when ready.");
+  char key = getchar();
+  
+
+
   //Send start acquisition signal  
   vme_addr = CAENBASEADDRESS + V1729_START_ACQUISITION;
   vme_data = 1;
@@ -634,6 +712,10 @@ int main(int argc, void *argv[])
   if (ret != cvSuccess)
   {
     printf("Sending Start Acquisition signal failed with error %d\n", ret);
+
+    vme_addr = CAENBASEADDRESS + V1729_RESET_BOARD;
+    vme_data = 1;
+    ret = CAENVME_WriteCycle(handle, vme_addr, &vme_data, addr_mode, data_size); 
     return 0;
   }  
 
@@ -649,6 +731,9 @@ int main(int argc, void *argv[])
   if (ret != cvSuccess)
   {
     printf("Sending Software Trigger failed with error %d\n", ret);
+    vme_addr = CAENBASEADDRESS + V1729_RESET_BOARD;
+    vme_data = 1;
+    ret = CAENVME_WriteCycle(handle, vme_addr, &vme_data, addr_mode, data_size); 
     return 0;
   }  
 
@@ -671,6 +756,9 @@ int main(int argc, void *argv[])
     if(timeout_counter > 0x1fff)
     {
     printf("Wait for interrupt has timed out.\n");
+    vme_addr = CAENBASEADDRESS + V1729_RESET_BOARD;
+    vme_data = 1;
+    ret = CAENVME_WriteCycle(handle, vme_addr, &vme_data, addr_mode, data_size); 
     CAENVME_End(handle);
     return 0;
     }
@@ -697,6 +785,9 @@ int main(int argc, void *argv[])
   if (ret != cvSuccess)
   {
     printf("Reading VME RAM failed with error %d\n", ret);
+    vme_addr = CAENBASEADDRESS + V1729_RESET_BOARD;
+    vme_data = 1;
+    ret = CAENVME_WriteCycle(handle, vme_addr, &vme_data, addr_mode, data_size); 
     return 0;
   }  
 
@@ -709,6 +800,9 @@ int main(int argc, void *argv[])
   if (ret != cvSuccess)
   {
     printf("Reading TRIG_REC failed with error %d\n", ret);
+    vme_addr = CAENBASEADDRESS + V1729_RESET_BOARD;
+    vme_data = 1;
+    ret = CAENVME_WriteCycle(handle, vme_addr, &vme_data, addr_mode, data_size); 
     return 0;
   }  
 
@@ -724,6 +818,9 @@ int main(int argc, void *argv[])
   if (ret != cvSuccess)
   {
     printf("Reading Channel Mask failed with error %d\n", ret);
+    vme_addr = CAENBASEADDRESS + V1729_RESET_BOARD;
+    vme_data = 1;
+    ret = CAENVME_WriteCycle(handle, vme_addr, &vme_data, addr_mode, data_size); 
     return 0;
   }  
 
@@ -760,6 +857,9 @@ int main(int argc, void *argv[])
   else 
   {
     printf("Mask Channel not Valid\n"); 
+    vme_addr = CAENBASEADDRESS + V1729_RESET_BOARD;
+    vme_data = 1;
+    ret = CAENVME_WriteCycle(handle, vme_addr, &vme_data, addr_mode, data_size); 
     return 0;
   }
 
@@ -790,5 +890,5 @@ int main(int argc, void *argv[])
 
   else printf("Closed Board succesfully\n");
 
- 
+  return 1; 
 }
