@@ -14,10 +14,10 @@ VME CRATE LAYOUT:
  2. Waveform Digitizer , V1729A
 
  3. C.F.D., V812
-    Whats CFD? 
+    Constant Fraction Discriminator 
 
  4. Leading Edge, V895 
-    Whats Leading Edg?
+    Leading Edge Discriminator 
   
  5. General Purpose VME Board, V1495
 
