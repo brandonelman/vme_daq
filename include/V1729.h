@@ -37,53 +37,20 @@
 #define V1729_NOS 2560
 #define V1729_VERNIER_DEPH 65536
 
-//--------------------------
-typedef struct cur_status_t
-{
-  uint32_t  addr ;     // Address
-  uint32_t  data ;     // Data
-  unsigned short    level ;    // Interrupt level
-  unsigned char   irqstat;     // IRQ status
-  unsigned short    am ;       // Addressing Mode
-  CVDataWidth dtsize ; // Data Format
-  uint32_t  base_addr ;  // Base Address
-  uint32_t  blts ;     // Block size for blt (bytes)
-  unsigned short    num_cyc ;     // Number of cycles
-  unsigned short    autoinc ;  // Auto increment address
-  uint32_t  *buff ;    // Mmemory buffer for blt
-} cur_status;
+/************************************
+GLOBAL VARIABLES
+************************************/
 
+int32_t handle; 
+const CVDataWidth data_size = cvD32
+const unsigned short addr_mode = cvA32_U_DATA;
 
-// ###########################################################################
-// Global Variables
-// ###########################################################################
-  
-  unsigned int num_cols;
-  unsigned int  buffer32[V1729_RAM_DEPH/2];
-	unsigned int buffer16[V1729_RAM_DEPH];
-  int pattern[V1729_RAM_DEPH]; //< pedestals
-	unsigned int trig_rec;
-	unsigned int post_trig ;
-	unsigned int MAXVER[4],MINVER[4];
-	unsigned short ch0[2560];
-	unsigned short ch1[2560];
-	unsigned short ch2[2560];
-	unsigned short ch3[2560];
-
-/*###########################################################################
+/*********************
  Function Declarations
-###########################################################################*/
-  void write_vme(int32_t, cur_status *);
-  void read_vme(int32_t, cur_status *);
-  void reset(int32_t, cur_status *);
-  void vernier(int32_t, cur_status *);
-  void pedestal(int32_t, cur_status *);
-  int  wait(int32_t, cur_status *);
-  void start_acq(int32_t, cur_status *);
-  void write_blt(int32_t, cur_status *);
-  void read_blt(int32_t, cur_status *);
-  void view_blt_data(int32_t, cur_status *);
-  void mask_buffer(int32_t, cur_status *);
-  void read_vme_ram(int32_t, cur_status *status);
-  void reorder(void);
-  void save(int32_t, cur_status *);
+*********************/
+
+CVErrorCodes write_to_vme(uint32_t, uint32_t *);
+CVErrorCodes read_from_vme(uint32_t, uint32_t *); 
+CVErrorCodes reset_vme(void);
+CVErrorCodes start_acq(void);
+int wait_for_interrupt(void); 

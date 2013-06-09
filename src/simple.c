@@ -519,7 +519,6 @@ int main(int argc, void *argv[])
   CVBoardTypes vme_board = cvV2718; //Type of Board
   short link = 0; //Link number 
   short device = 0; //Device Number
-  int32_t handle; //Handle used for interacting with board
   CVErrorCodes ret; //Stores Error Codes for Debugging
   uint32_t vme_addr; //Address to Access VME Registers
   uint32_t vme_data; //Data holder for writing and reading
@@ -550,11 +549,6 @@ int main(int argc, void *argv[])
 
   /* These arrays store the data that will be saved to file post-reordering */
   unsigned short ch0[2560], ch1[2560], ch2[2560], ch3[2560];
-
-  /* Parameters */
-  unsigned short addr_mode = cvA32_U_DATA;
-  //unsigned short num_cycles = 1; -> multiple read cycles not implemented yet
-  CVDataWidth data_size = cvD32;  
 
   /* Create opaque handle for interacting with VX2718 Board */
   if ( CAENVME_Init(vme_board, link, device, &handle) != cvSuccess )
