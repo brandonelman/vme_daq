@@ -122,7 +122,7 @@ int vernier(int32_t handle, unsigned short addr_mode,
 
   printf("    Setting mask to allow 4 Channels ...\n"); 
   vme_addr = CAENBASEADDRESS + V1729_CHANNEL_MASK;
-  vme_data = 15; //trigger random sofware
+  vme_data = 15; 
   ret = CAENVME_WriteCycle(handle, vme_addr, &vme_data, addr_mode, data_size); 
 
   if (ret != cvSuccess)
@@ -179,11 +179,11 @@ int vernier(int32_t handle, unsigned short addr_mode,
   {
     timeout_counter++;
     ret = CAENVME_ReadCycle(handle, vme_addr, &vme_data, addr_mode, data_size); 
-    interrupt = vme_data & 1;
+    interrupt = vme_data;
 
     if(timeout_counter > 0x1ffff)
     {
-    printf(" Wait for interrupt has timed out.\n");
+    printf("  Wait for interrupt has timed out.\n");
     //Added reset here so board isn't stuck in acquisition mode after failing. 
     vme_addr = CAENBASEADDRESS + V1729_RESET_BOARD;
     vme_data = 1;
@@ -191,20 +191,22 @@ int vernier(int32_t handle, unsigned short addr_mode,
     CAENVME_End(handle);
     return 0;
     }
+  
+    printf(" Successfully found interrupt!\n");
   }
-
-  printf("Resetting columns to read to initial value\n");
+  
+  printf("    Resetting columns to read to initial value... ");
   vme_addr = CAENBASEADDRESS + V1729_NB_OF_COLS_TO_READ;
   vme_data = cols; //Sets # of cols to 0 for fast calibration
   ret = CAENVME_WriteCycle(handle, vme_addr, &vme_data, addr_mode, data_size); 
 
   if (ret != cvSuccess)
   {
-    printf("    Resetting num. of columns failed with error: %d \n", ret);
+    printf(" Resetting num. of columns failed with error: %d \n", ret);
     return 0;
   }  
 
-  else printf("    Resetting number of columns successful\n");
+  else printf(" Resetting number of columns successful\n");
 
   //I don't completely understand everything that's going on here.
   //This part is mainly a copy+paste from the CAEN Demo version of this 
@@ -281,6 +283,7 @@ int get_pedestals(int32_t handle, unsigned short addr_mode,
 
   for (i = 0; i < 10252; i++) pedestals[i] = 0; //Initialize pedestal array
 
+  printf("    Starting sequence of acquisitions to find pedestals...\n");
   //Doing 50 acquisition runs to get pedestals.
   for (i = 0; i < 50; i++)
   {
@@ -302,7 +305,7 @@ int get_pedestals(int32_t handle, unsigned short addr_mode,
     else printf("    Sending Start Acquisition signal succesful\n");
 
     //Wait for Interrupt
-    printf("    Waiting for interrupt from V1729A...");
+    //printf("    Waiting for interrupt from V1729A...");
     unsigned int timeout_counter =  0; 
     vme_addr = CAENBASEADDRESS + V1729_INTERRUPT;
     unsigned int interrupt = 0;
@@ -311,7 +314,7 @@ int get_pedestals(int32_t handle, unsigned short addr_mode,
     {
       timeout_counter++;
       ret = CAENVME_ReadCycle(handle, vme_addr, &vme_data, addr_mode, data_size); 
-      interrupt = vme_data & 1;
+      interrupt = vme_data;
 
       if(timeout_counter > 0x1ffff)
       {
@@ -322,10 +325,11 @@ int get_pedestals(int32_t handle, unsigned short addr_mode,
       CAENVME_End(handle);
       return 0;
       }
+      printf("    Successfully found interrupt! \n");
     }
 
     //Read VME Ram
-    printf("    Attempting to read vme ram");
+    //printf("    Attempting to read vme ram... ");
     vme_addr = CAENBASEADDRESS + V1729_RAM_DATA_VME; 
     int count; //number of bytes transferred
     ret = CAENVME_BLTReadCycle(handle, vme_addr, buffer32, V1729_RAM_DEPH/2, 
@@ -524,7 +528,7 @@ int main(int argc, void *argv[])
   uint32_t vme_addr; //Address to Access VME Registers
   uint32_t vme_data; //Data holder for writing and reading
 
-  uint32_t trig_lev = 0x6ff; //trigger level 
+  uint32_t trig_lev = 0x6f; //trigger level 
   uint32_t active_channel; //active channel on the frontend of board
   uint32_t trig_type; //type of trigger (software, auto, external, etc)
   uint32_t num_columns; //number of columns to read from MATACQ matrix
@@ -536,6 +540,14 @@ int main(int argc, void *argv[])
   int buffer;
   unsigned int buffer32[V1729_RAM_DEPH/2]; //Two buffers for storing BLT data.
   unsigned int buffer16[V1729_RAM_DEPH]; 
+  int i;
+   for (i=0; i<V1729_RAM_DEPH/2; i++)                                                                                  
+  {                                                                                                                   
+    buffer32[i]=0;                                                                                                    
+    buffer16[2*i]=0;                                                                                                  
+    buffer16[(2*i)+1]=0;                                                                                              
+  }         
+
   int pedestals[V1729_RAM_DEPH];
   unsigned int MAXVER[4], MINVER[4]; /*Correspond to 
                                      1/pilot_frequency and the 
@@ -553,8 +565,10 @@ int main(int argc, void *argv[])
 
   /* Parameters */
   unsigned short addr_mode = cvA32_U_DATA;
-  //unsigned short num_cycles = 1; -> multiple read cycles not implemented yet
+ //unsigned short num_cycles = 1; -> multiple read cycles not implemented yet
   CVDataWidth data_size = cvD32;  
+
+
 
   /* Create opaque handle for interacting with VX2718 Board */
   if ( CAENVME_Init(vme_board, link, device, &handle) != cvSuccess )
@@ -591,6 +605,32 @@ int main(int argc, void *argv[])
   else printf("Load Trigger Type successful\n");
 
   trig_type = vme_data & 0x3f; 
+
+  printf("Attempting to set trigger channel source\n");
+
+  vme_addr = CAENBASEADDRESS + V1729_TRIGGER_CHANNEL_SRC;
+  vme_data = 0xf;
+  ret = CAENVME_WriteCycle(handle, vme_addr, &vme_data, addr_mode, data_size); 
+  if (ret != cvSuccess)
+  {
+    printf("Setting trigger level failed with error %d\n", ret);
+    return 0;
+  }  
+
+  else printf("Trigger level set succesfully\n");
+
+  printf("Attempting to enact LOAD_TRIGGER_THRESHOLD DAC\n");
+  vme_addr = CAENBASEADDRESS + V1729_LOAD_TRIGGER_THS;
+  vme_data = 1;
+  ret = CAENVME_WriteCycle(handle, vme_addr, &vme_data, addr_mode, data_size); 
+  if (ret != cvSuccess)
+  {
+    printf("Loading trigger threshold command failed with error: %d\n", ret);
+    return 0; 
+  }  
+
+  else printf("Load Trigger threshold command successful\n");
+
 
    /* Set Trigger Threshold */
   printf("Attempting to set trigger level\n");
@@ -690,16 +730,16 @@ int main(int argc, void *argv[])
 
   else printf("Successful vernier calibration!\n");
   
-
+  printf("Attempting to get pedestals...\n");
   if (get_pedestals(handle, addr_mode, data_size, trig_type, pedestals, buffer32, buffer16) == 0)
   {
     printf("Failed to get pedestals.\n");
     CAENVME_End(handle);
     return 0;
   }
-  else printf("Successfully found pedestals"); 
+  else printf("Successfully found pedestals\n"); 
 
-  printf("Please now attach your signal to the board. Press RETURN when ready.");
+  printf("Please now attach your signal to the board. Press RETURN when ready.\n");
   char key = getchar();
   
 
@@ -751,7 +791,7 @@ int main(int argc, void *argv[])
     
     timeout_counter++;
     ret = CAENVME_ReadCycle(handle, vme_addr, &vme_data, addr_mode, data_size); 
-    interrupt = vme_data & 1;
+    interrupt = vme_data;
 
     if(timeout_counter > 0x1fff)
     {
@@ -780,7 +820,7 @@ int main(int argc, void *argv[])
   printf("Attempting to read vme ram");
   vme_addr = CAENBASEADDRESS + V1729_RAM_DATA_VME; 
   ret = CAENVME_BLTReadCycle(handle, vme_addr, buffer32, V1729_RAM_DEPH/2, 
-                             addr_mode, data_size, &count);  
+                             cvA32_U_BLT, data_size, &count);  
 
   if (ret != cvSuccess)
   {
