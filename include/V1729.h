@@ -1,7 +1,7 @@
 /* V1729.H : source code for V1729 module */
 /* created 14.10.2009 by Franco.LARI     */
 
-// Register address  
+// Register addresses
 #define V1729_RESET_BOARD 			0x0800
 #define V1729_START_ACQUISITION		0x1700
 #define V1729_TRIGGER_TYPE 			0x1D00
@@ -30,60 +30,43 @@
 #define V1729                       0x3
 #define V1729A                      0xF
 
-
-
 #define CAENBASEADDRESS  0x30010000
 #define V1729_RAM_DEPH 10252
 #define V1729_NOS 2560
 #define V1729_VERNIER_DEPH 65536
 
-//--------------------------
-typedef struct cur_status_t
-{
-  uint32_t  addr ;     // Address
-  uint32_t  data ;     // Data
-  unsigned short    level ;    // Interrupt level
-  unsigned char   irqstat;     // IRQ status
-  unsigned short    am ;       // Addressing Mode
-  CVDataWidth dtsize ; // Data Format
-  uint32_t  base_addr ;  // Base Address
-  uint32_t  blts ;     // Block size for blt (bytes)
-  unsigned short    num_cyc ;     // Number of cycles
-  unsigned short    autoinc ;  // Auto increment address
-  uint32_t  *buff ;    // Mmemory buffer for blt
-} cur_status;
+#include "CAENVMElib.h"
+/************************************
+GLOBAL VARIABLES
+************************************/
 
+int32_t handle; 
+uint32_t vme_data; /*Made global so I can read into it easier than passing
+                     multiple pointers around. There is Probably a better 
+                     way to do this.*/     
 
-// ###########################################################################
-// Global Variables
-// ###########################################################################
-  
-  unsigned int num_cols;
-  unsigned int  buffer32[V1729_RAM_DEPH/2];
-	unsigned int buffer16[V1729_RAM_DEPH];
-  int pattern[V1729_RAM_DEPH]; //< pedestals
-	unsigned int trig_rec;
-	unsigned int post_trig ;
-	unsigned int MAXVER[4],MINVER[4];
-	unsigned short ch0[2560];
-	unsigned short ch1[2560];
-	unsigned short ch2[2560];
-	unsigned short ch3[2560];
-
-/*###########################################################################
+/*********************
  Function Declarations
-###########################################################################*/
-  void write_vme(int32_t, cur_status *);
-  void read_vme(int32_t, cur_status *);
-  void reset(int32_t, cur_status *);
-  void vernier(int32_t, cur_status *);
-  void pedestal(int32_t, cur_status *);
-  int  wait(int32_t, cur_status *);
-  void start_acq(int32_t, cur_status *);
-  void write_blt(int32_t, cur_status *);
-  void read_blt(int32_t, cur_status *);
-  void view_blt_data(int32_t, cur_status *);
-  void mask_buffer(int32_t, cur_status *);
-  void read_vme_ram(int32_t, cur_status *status);
-  void reorder(void);
-  void save(int32_t, cur_status *);
+*********************/
+
+CVErrorCodes write_to_vme(uint32_t, uint32_t);
+CVErrorCodes read_from_vme(uint32_t); 
+CVErrorCodes reset_vme(void);
+CVErrorCodes start_acq(void);
+CVErrorCodes read_vme_ram(unsigned int buffer32[V1729_RAM_DEPH/2]);
+int wait_for_interrupt(void); 
+int vernier(unsigned int MAXVER[4], unsigned int MINVER[4]);
+
+int get_pedestals(int pedestals[V1729_RAM_DEPH], unsigned int buffer32[V1729_RAM_DEPH/2], 
+                  unsigned int buffer16[V1729_RAM_DEPH]);
+
+int mask_buffer(unsigned int buffer32[V1729_RAM_DEPH/2], unsigned int buffer16[V1729_RAM_DEPH]);
+
+int reorder(unsigned int trig_rec, unsigned int post_trig, uint32_t num_columns, 
+            unsigned int MINVER[4], unsigned int MAXVER[4], unsigned int buffer16[V1729_RAM_DEPH/2], 
+            unsigned short ch0[2560],unsigned short ch1[2560], unsigned short ch2[2560],
+            unsigned short ch3[2560]);
+
+int save(unsigned short ch0[2560], unsigned short ch1[2560], 
+         unsigned short ch2[2560], unsigned short ch3[2560]);
+
