@@ -108,7 +108,7 @@ CVErrorCodes read_vme_ram(unsigned int buffer32[V1729_RAM_DEPH/2])
 {
   int count; //number of bytes transferred
   uint32_t vme_addr = CAENBASEADDRESS + V1729_RAM_DATA_VME; 
-  CVDataWidth data_size = cvD16;
+  CVDataWidth data_size = cvD32;
 
   return  CAENVME_BLTReadCycle(handle, vme_addr, buffer32, V1729_RAM_DEPH/2, 
                                cvA32_U_BLT, data_size, &count);  
