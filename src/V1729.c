@@ -106,13 +106,12 @@ int wait_for_interrupt(void)
 
 CVErrorCodes read_vme_ram(unsigned int buffer32[V1729_RAM_DEPH/2])
 {
-    int count; //number of bytes transferred
-    uint32_t vme_addr = CAENBASEADDRESS + V1729_RAM_DATA_VME; 
+  int count; //number of bytes transferred
+  uint32_t vme_addr = CAENBASEADDRESS + V1729_RAM_DATA_VME; 
+  CVDataWidth data_size = cvD16;
 
-    CVDataWidth data_size = cvD32;
-
-    return  CAENVME_BLTReadCycle(handle, vme_addr, &buffer32, V1729_RAM_DEPH/2, 
-                                 cvA32_U_BLT, data_size, &count);  
+  return  CAENVME_BLTReadCycle(handle, vme_addr, buffer32, V1729_RAM_DEPH/2, 
+                               cvA32_U_BLT, data_size, &count);  
 }
 
 
@@ -403,7 +402,7 @@ int get_pedestals(int pedestals[V1729_RAM_DEPH],
       reset_vme();
       return 0;
     }  
-    else printf("        Sending Start Acquisition signal succesful\n");
+//    else printf("        Sending Start Acquisition signal succesful\n");
 
     //Wait for Interrupt
     if(wait_for_interrupt() == 0)
@@ -411,6 +410,20 @@ int get_pedestals(int pedestals[V1729_RAM_DEPH],
       reset_vme();
       CAENVME_End(handle); 
     }
+//    else
+
+    /*After receiving interrupt must acknowledge
+     by writing 0 in interrupt register.*/
+//    printf("Interrupt found. Attempting to acknowledge..\n");
+    ret = write_to_vme(V1729_INTERRUPT, 0); 
+
+    if (ret != cvSuccess)
+    {
+      printf("    Interrupt Acknowledge failed with error %d\n", ret);
+      return 0;
+    }  
+//    else printf("Interrupt Acknowledged succesfully\n");
+
 
     //Read VME Ram
     ret = read_vme_ram(buffer32);
@@ -432,11 +445,11 @@ int get_pedestals(int pedestals[V1729_RAM_DEPH],
       return 0;
       }
 
-    else
-      printf("        Buffer masked successfully\n"); 
+//    else
+//      printf("        Buffer masked successfully\n"); 
 
     //Find Pedestals
-    printf("        Calculating pedestals.\n");
+  //  printf("        Calculating pedestals.\n");
     for (j = 0; j < 2560; j ++)
       for (ch = 0; ch < 4; ch ++)
         pedestals[j*4 + ch] = pedestals[j*4 + ch] + buffer16[12 + j*4 + ch]; 

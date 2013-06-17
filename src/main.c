@@ -242,8 +242,8 @@ int main(int argc, void *argv[])
     reset_vme();
     CAENVME_End(handle);
   }
-
   else printf(" Successfully found interrupt.\n");
+
 
   /*After receiving interrupt must acknowledge
    by writing 0 in interrupt register.*/
