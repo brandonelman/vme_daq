@@ -68,19 +68,18 @@ int mask_buffer(unsigned int buffer32[V1729_RAM_DEPH/2], unsigned int buffer16[V
     reset_vme();
     return 0;
   }  
-  else printf("    Reading MODE REGISTER succesful\n");
 
-  if( (vme_data & 0x2) == 2) 
+  if( (vme_data&0x2) == 2) 
     mask = 0x3fff; /*14 bit*/
 
   else mask = 0xfff; /*12 bit*/ 
 
   for (i = 0; i < V1729_RAM_DEPH; i = i + 2) 
   {
-    buffer16[i+1] = mask & buffer32[i/2];
-    buffer16[i] = mask & (buffer32[i/2]>>16);
+    buffer16[i+1] = mask&buffer32[i/2];
+    buffer16[i] = mask&(buffer32[i/2]>>16);
   }
-  return 0;
+  return 1;
 }
 
 int wait_for_interrupt(void)
@@ -95,7 +94,7 @@ int wait_for_interrupt(void)
 
     interrupt = vme_data&1;
 
-    if(timeout_counter > 0x1ffffff)
+    if(timeout_counter > 0x1fffff)
     {
     printf(" Wait for interrupt has timed out.\n");
     return 0;
@@ -106,12 +105,29 @@ int wait_for_interrupt(void)
 
 CVErrorCodes read_vme_ram(unsigned int buffer32[V1729_RAM_DEPH/2])
 {
-  int count; //number of bytes transferred
+  int i;
+
+  for (i =0; i < V1729_RAM_DEPH/2; i++)
+  {
+    CVErrorCodes ret = read_from_vme(V1729_RAM_DATA_VME);
+    if (ret != cvSuccess)
+    {
+      printf("Failed reading from RAM at iteration %d", i); 
+      return ret;
+    }
+
+    buffer32[i] = vme_data; 
+  }
+
+  return cvSuccess;
+/*
   uint32_t vme_addr = CAENBASEADDRESS + V1729_RAM_DATA_VME; 
   CVDataWidth data_size = cvD32;
+  int count; //number of bytes transferred
 
   return  CAENVME_BLTReadCycle(handle, vme_addr, buffer32, V1729_RAM_DEPH/2, 
-                               cvA32_U_BLT, data_size, &count);  
+                               cvA32_S_BLT, data_size, &count);  
+*/
 }
 
 
@@ -402,19 +418,39 @@ int get_pedestals(int pedestals[V1729_RAM_DEPH],
       reset_vme();
       return 0;
     }  
-//    else printf("        Sending Start Acquisition signal succesful\n");
 
+    //IRQ Handling
+/*
+    if (CAENVME_IRQEnable(handle, cvIRQ3) != cvSuccess)
+    {
+      printf("Failed to enable IRQ Line 3");
+      return 0;
+    }  
+
+    if (CAENVME_IRQWait(handle, cvIRQ3, 1000) != cvSuccess) 
+    {
+      printf("Failed to wait for interrupt");
+      return 0; 
+    }
+
+    uint32_t Vector;    
+
+    if (CAENVME_IACKCycle(handle, cvIRQ3, &Vector, cvD32) != cvSuccess)
+    {
+      printf("Failed to complete IACK Cycle");
+      return 0;
+    } 
+    else printf("Completed IACK Cycle!");
+*/ 
     //Wait for Interrupt
     if(wait_for_interrupt() == 0)
     {
+      printf("    Failed waiting for interrupt!");
       reset_vme();
       CAENVME_End(handle); 
     }
-//    else
-
-    /*After receiving interrupt must acknowledge
-     by writing 0 in interrupt register.*/
-//    printf("Interrupt found. Attempting to acknowledge..\n");
+    //After receiving interrupt must acknowledge
+    //  by writing 0 in interrupt register.
     ret = write_to_vme(V1729_INTERRUPT, 0); 
 
     if (ret != cvSuccess)
@@ -422,7 +458,6 @@ int get_pedestals(int pedestals[V1729_RAM_DEPH],
       printf("    Interrupt Acknowledge failed with error %d\n", ret);
       return 0;
     }  
-//    else printf("Interrupt Acknowledged succesfully\n");
 
 
     //Read VME Ram
@@ -434,7 +469,6 @@ int get_pedestals(int pedestals[V1729_RAM_DEPH],
       reset_vme();
       return 0;
     }  
-    else printf("        Reading VME RAM succesful\n");
 
 
     //Mask Buffer
@@ -519,10 +553,10 @@ int reorder(unsigned int trig_rec, unsigned int post_trig, uint32_t num_columns,
   for (i = 0; i < 4; i++)
   {
     ver[i] = (float)(buffer16[1 + 3 - i] - MINVER[i])/(float)(MAXVER[i]-MINVER[i]);
-    cor_ver = cor_ver + (int)(20*ver[i]/4);
+    cor_ver = cor_ver + (int)(20.0*ver[i]/4.0);
   }
 
-  end_cell = (20 * (128 - (trig_rec) + (post_trig) + 1) % 2560);
+  end_cell = (20 * (128 - (trig_rec) + post_trig) + 1) % 2560;
   new_num_col = num_columns * 20;
   for (i =0; i < new_num_col; i++)
   {
@@ -559,7 +593,7 @@ int save(unsigned short ch0[2560], unsigned short ch1[2560],
   else printf(" Load number of columns successful\n");
 
   num_cols = vme_data&0xff;
-
+  new_num_cols = num_cols*20;
   /* Finding value of channel mask */
   printf("    Finding value of CHANNEL_MASK..");
   ret = read_from_vme(V1729_CHANNEL_MASK);
@@ -574,7 +608,7 @@ int save(unsigned short ch0[2560], unsigned short ch1[2560],
   channel_mask = vme_data&0xf;
 
   /* Saving files based on your channel mask selection */
-  if(channel_mask & 0x1)
+  if(channel_mask&0x1)
   {
     ch[0] = fopen("Ch_0.dat", "w+b");
     for (i = 40; i < new_num_cols; i++)
@@ -586,7 +620,7 @@ int save(unsigned short ch0[2560], unsigned short ch1[2560],
    fclose(ch[0]);
   }
   
-  if(channel_mask & 0x2)
+  if(channel_mask&0x2)
   {
     ch[1] = fopen("Ch_1.dat", "w+b");
     for (i = 40; i < new_num_cols; i++)
@@ -598,7 +632,7 @@ int save(unsigned short ch0[2560], unsigned short ch1[2560],
     fclose(ch[1]);
   }
 
-  if(channel_mask & 0x4)
+  if(channel_mask&0x4)
   {
     ch[2] = fopen("Ch_2.dat", "w+b");
     for (i = 40; i < new_num_cols; i++)
@@ -609,7 +643,7 @@ int save(unsigned short ch0[2560], unsigned short ch1[2560],
 
     fclose(ch[2]);
   }
-  if(channel_mask & 0x8)
+  if(channel_mask&0x8)
   {
     ch[3] = fopen("Ch_3.dat", "w+b");
     for (i = 40; i < new_num_cols; i++)
