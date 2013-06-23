@@ -25,7 +25,7 @@ int main(int argc, void *argv[])
   short device = 0; //Device Number
   CVErrorCodes ret; //Stores Error Codes for Debugging
 
-  uint32_t trig_lev = 0x6ff; //trigger level 
+  uint32_t trig_lev = 0x6f; //trigger level 
   uint32_t active_channel; //active channel on the frontend of board
   uint32_t trig_type; //type of trigger (software, auto, external, etc)
   uint32_t num_columns; //number of columns to read from MATACQ matrix
@@ -148,7 +148,6 @@ int main(int argc, void *argv[])
   else printf(" Load TRIGGER_TYPE successful\n");
 
   trig_type = vme_data&0x3f;
-
   printf("Attempting to set active channel...  ");
   ret = write_to_vme(V1729_CHANNEL_MASK, 15); 
   if (ret != cvSuccess)
@@ -170,7 +169,6 @@ int main(int argc, void *argv[])
   else printf("Load active channel successful\n");
 
   active_channel = vme_data&0xf; 
-  printf("Current active channel: %d\n", active_channel);
 
   printf("Setting PRETRIG to 40 at MSB... ");
 
@@ -223,9 +221,13 @@ int main(int argc, void *argv[])
   else printf("    Load POSTTRIG_MSB successful\n");
   
   post_trig = post_trig + (vme_data&0xFF)*256; 
-  printf("Post Trig after MSB: %d\n", post_trig);
-  printf("Attempting to perform Vernier calibration\n");
 
+  printf("Post Trig after MSB: %d\n", post_trig);
+  printf("Current active channel: %d\n", active_channel);
+  printf("Current Trigger type: %d\n", trig_type);
+  printf("num_columns: %d\n", num_columns);
+
+  printf("Attempting to perform Vernier calibration\n");
   if (vernier(MAXVER,  MINVER) != 1)
   {
     printf("Failed vernier calibration. \n");
@@ -233,7 +235,7 @@ int main(int argc, void *argv[])
   }
 
   else printf("Successful vernier calibration!\n");
- 
+
   printf("Attempting to find pedestals... \n");
   if (get_pedestals(pedestals, buffer32, buffer16) == 0)
   {
@@ -242,6 +244,7 @@ int main(int argc, void *argv[])
     return 0;
   }
   else printf("Successfully found pedestals\n"); 
+ 
 
   printf("Please now attach your signal to the board. Press RETURN when ready.\n");
   char key = getchar(); /* Probably a better way to do this, but 
@@ -262,6 +265,19 @@ int main(int argc, void *argv[])
   }  
   else printf("Sending Start Acquisition signal succesful\n");
 
+  /*Set Trigger to Random Software
+  printf("    Setting trigger to random software ... "); 
+  ret = write_to_vme(V1729_TRIGGER_TYPE, 0x8); 
+  
+  if (ret != cvSuccess)
+  {
+    printf(" Setting trigger type failed with error: %d \n", ret);
+    return 0;
+  }  
+  else printf(" Set Trigger Type successful\n");
+  */
+
+  usleep(2000);
   /*Send Software Trigger after waiting PRETRIG*/ 
   printf("Sending Software Trigger...  "); 
   ret = write_to_vme(V1729_SOFTWARE_TRIGGER, 1); 
@@ -273,7 +289,6 @@ int main(int argc, void *argv[])
     return 0;
   }  
   else printf("Sending Software Trigger succesful\n");
-  
 
   /*Wait for Interrupt from V1729A*/
   printf("Waiting for interrupt from V1729A...");

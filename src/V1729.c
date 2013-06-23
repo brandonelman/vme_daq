@@ -74,7 +74,7 @@ int mask_buffer(unsigned int buffer32[V1729_RAM_DEPH/2], unsigned int buffer16[V
 
   else mask = 0xfff; /*12 bit*/ 
 
-  for (i = 0; i < V1729_RAM_DEPH; i = i + 2) 
+  for (i = 0; i < V1729_RAM_DEPH; i=i+2) 
   {
     buffer16[i+1] = mask&buffer32[i/2];
     buffer16[i] = mask&(buffer32[i/2]>>16);
@@ -94,7 +94,7 @@ int wait_for_interrupt(void)
 
     interrupt = vme_data&1;
 
-    if(timeout_counter > 0x1fffff)
+    if(timeout_counter > 0x1ffffff)
     {
     printf(" Wait for interrupt has timed out.\n");
     return 0;
@@ -402,16 +402,15 @@ int get_pedestals(int pedestals[V1729_RAM_DEPH],
   }  
   else printf(" Set channel mask successfully\n");
 
-  for (i = 0; i < 10252; i++) pedestals[i] = 0; //Initialize pedestal array
+  for (i = 0; i < 10252; i++) pedestals[i] = 0; /*Initialize pedestal array*/
 
    
-  //Doing 50 acquisition runs to get pedestals.
+  /*Doing 50 acquisition runs to get pedestals.*/
   printf("    Starting 50 acquisition sequences to find mean pedestals\n"); 
   for (i = 0; i < 50; i++)
-  {
-    //Send start acquisition signal  
+  { 
+    /* Start Acquisition */
     ret = start_acq(); 
-
     if (ret != cvSuccess)
     {
       printf("        Sending Start Acquisition signal failed with error %d\n", ret);
@@ -419,50 +418,24 @@ int get_pedestals(int pedestals[V1729_RAM_DEPH],
       return 0;
     }  
 
-    //IRQ Handling
-/*
-    if (CAENVME_IRQEnable(handle, cvIRQ3) != cvSuccess)
-    {
-      printf("Failed to enable IRQ Line 3");
-      return 0;
-    }  
-
-    if (CAENVME_IRQWait(handle, cvIRQ3, 1000) != cvSuccess) 
-    {
-      printf("Failed to wait for interrupt");
-      return 0; 
-    }
-
-    uint32_t Vector;    
-
-    if (CAENVME_IACKCycle(handle, cvIRQ3, &Vector, cvD32) != cvSuccess)
-    {
-      printf("Failed to complete IACK Cycle");
-      return 0;
-    } 
-    else printf("Completed IACK Cycle!");
-*/ 
-    //Wait for Interrupt
+    /*Wait for Interrupt*/
     if(wait_for_interrupt() == 0)
     {
       printf("    Failed waiting for interrupt!");
       reset_vme();
       CAENVME_End(handle); 
     }
-    //After receiving interrupt must acknowledge
-    //  by writing 0 in interrupt register.
+    /*After receiving interrupt must acknowledge
+      by writing 0 in interrupt register.*/
     ret = write_to_vme(V1729_INTERRUPT, 0); 
-
     if (ret != cvSuccess)
     {
       printf("    Interrupt Acknowledge failed with error %d\n", ret);
       return 0;
     }  
 
-
-    //Read VME Ram
+    /*Read VME Ram*/
     ret = read_vme_ram(buffer32);
-    
     if (ret != cvSuccess)
     {
       printf("        Reading VME RAM failed with error %d\n", ret);
@@ -470,8 +443,7 @@ int get_pedestals(int pedestals[V1729_RAM_DEPH],
       return 0;
     }  
 
-
-    //Mask Buffer
+    /*Mask Buffer*/
     if( mask_buffer(buffer32, buffer16) == 0 ) 
       {
       printf("        Masking the buffer has failed with error %d\n", ret);
@@ -479,27 +451,23 @@ int get_pedestals(int pedestals[V1729_RAM_DEPH],
       return 0;
       }
 
-//    else
-//      printf("        Buffer masked successfully\n"); 
-
-    //Find Pedestals
-  //  printf("        Calculating pedestals.\n");
-    for (j = 0; j < 2560; j ++)
-      for (ch = 0; ch < 4; ch ++)
+    /*Find Pedestals*/
+    for (j = 0; j < 2560; j++)
+      for (ch = 0; ch < 4; ch++)
         pedestals[j*4 + ch] = pedestals[j*4 + ch] + buffer16[12 + j*4 + ch]; 
   }
 
   for (j = 0; j < 2560; j++)
-    for (ch = 0; ch < 4; ch ++)
+    for (ch = 0; ch < 4; ch++)
     {
       pedestals[j*4 + ch] = pedestals[j*4 + ch] / (50);
       meanpedestal[ch] = meanpedestal[ch] + pedestals[j*4 + ch]; 
     }
 
-  for (ch =4; ch < 4; ch++) meanpedestal[ch] = meanpedestal[ch]/2560;
+  for (ch = 0; ch < 4; ch++) meanpedestal[ch] = meanpedestal[ch]/2560;
 
-  for (k = 0; k < 2560; k ++)
-    for (ch = 0; ch < 4; ch ++)
+  for (k = 0; k < 2560; k++)
+    for (ch = 0; ch < 4; ch++)
       pedestals[k*4 + ch] = pedestals[k*4 + ch] - (int)meanpedestal[ch]; 
 
   /*Resetting NB_OF_COLS_TO_READ, CHANNEL_MASK, TRIGGER_TYPE */
@@ -552,8 +520,9 @@ int reorder(unsigned int trig_rec, unsigned int post_trig, uint32_t num_columns,
 
   for (i = 0; i < 4; i++)
   {
-    ver[i] = (float)(buffer16[1 + 3 - i] - MINVER[i])/(float)(MAXVER[i]-MINVER[i]);
-    cor_ver = cor_ver + (int)(20.0*ver[i]/4.0);
+    ver[i] = (float)(buffer16[1+3-i] - MINVER[i])/(float)(MAXVER[i]-MINVER[i]);
+    ;
+    cor_ver = cor_ver + (int)(20*ver[i]/4);
   }
 
   end_cell = (20 * (128 - (trig_rec) + post_trig) + 1) % 2560;
@@ -616,7 +585,6 @@ int save(unsigned short ch0[2560], unsigned short ch1[2560],
       sprintf(s, "%d\n", ch0[i]);
       fwrite(s, 1, strlen(s), ch[0]);
     }
-  
    fclose(ch[0]);
   }
   
@@ -628,7 +596,6 @@ int save(unsigned short ch0[2560], unsigned short ch1[2560],
       sprintf(s, "%d\n", ch1[i]);
       fwrite(s, 1, strlen(s), ch[1]);
     }
-
     fclose(ch[1]);
   }
 
@@ -640,9 +607,9 @@ int save(unsigned short ch0[2560], unsigned short ch1[2560],
       sprintf(s, "%d\n", ch2[i]);
       fwrite(s, 1, strlen(s), ch[2]);
     }
-
     fclose(ch[2]);
   }
+
   if(channel_mask&0x8)
   {
     ch[3] = fopen("Ch_3.dat", "w+b");
@@ -651,7 +618,6 @@ int save(unsigned short ch0[2560], unsigned short ch1[2560],
       sprintf(s, "%d\n", ch3[i]);
       fwrite(s, 1, strlen(s), ch[3]);
     }
-  
     fclose(ch[3]);
   }
   
