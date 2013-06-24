@@ -461,10 +461,19 @@ int get_pedestals(int pedestals[V1729_RAM_DEPH],
     for (ch = 0; ch < 4; ch++)
     {
       pedestals[j*4 + ch] = pedestals[j*4 + ch] / (50);
-      meanpedestal[ch] = meanpedestal[ch] + pedestals[j*4 + ch]; 
+      meanpedestal[ch] = meanpedestal[ch] + (float)pedestals[j*4 + ch]; 
+      printf("Pedestals[j*4+ch]: %d\n", pedestals[j*4+ch]);
+      printf("meanpedestal[ch] = %f\n", meanpedestal[ch]);
+      printf("(float)pedestals[j*4+ch]: %f\n", (float)pedestals[j*4+ch]);
+      printf("meanpedestal[ch] = %f\n",  meanpedestal[ch] + (float)pedestals[j*4 + ch]); 
     }
 
-  for (ch = 0; ch < 4; ch++) meanpedestal[ch] = meanpedestal[ch]/2560;
+  for (ch = 0; ch < 4; ch++) meanpedestal[ch] = meanpedestal[ch]/2560.0;
+
+  printf("meanpedestal[0]: %f\n",meanpedestal[0]); 
+  printf("meanpedestal[1]: %f\n",meanpedestal[1]); 
+  printf("meanpedestal[2]: %f\n",meanpedestal[2]); 
+  printf("meanpedestal[3]: %f\n",meanpedestal[3]); 
 
   for (k = 0; k < 2560; k++)
     for (ch = 0; ch < 4; ch++)

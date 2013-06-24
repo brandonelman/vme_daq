@@ -99,8 +99,8 @@ CVErrorCodes set_dead_time(int ch_section, int set_count)
 
 CVErrorCodes set_majority_threshold(int maj_lev) 
 {
-  uint32_t vme_addr = V812_MAJORITY_TRESHOLD; 
-  int majority_treshold = (int)((majlev*50.0-25.0)/4.0);
+  uint32_t vme_addr = V812_MAJORITY_THRESHOLD; 
+  int majority_treshold = (int)((maj_lev*50.0-25.0)/4.0);
 
   return write_to_v812(vme_addr, majority_treshold);
 }
