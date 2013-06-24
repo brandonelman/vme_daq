@@ -25,7 +25,7 @@ int main(int argc, void *argv[])
   short device = 0; //Device Number
   CVErrorCodes ret; //Stores Error Codes for Debugging
 
-  uint32_t trig_lev = 0x6f; //trigger level 
+  uint32_t trig_lev = 0x000; //trigger level 
   uint32_t active_channel; //active channel on the frontend of board
   uint32_t trig_type; //type of trigger (software, auto, external, etc)
   uint32_t num_columns; //number of columns to read from MATACQ matrix
@@ -114,6 +114,17 @@ int main(int argc, void *argv[])
   else printf("Load Trigger threshold command successful\n");
 
   /* Initialization of Paramaters */
+    /* FP Frequency */
+  printf("Attempting to change pilot frequency... ");
+  ret = write_to_vme(V1729_FP_FREQUENCY, 0x01);/*2 GHz*/
+  if (ret != cvSuccess)
+  {
+    printf("Changing pilot frequency failed with error: %d \n", ret);
+    return 0;
+  }  
+  else printf("Change pilot frequency successful\n");
+  
+
     /* Num Columns */ 
   printf("Attempting to set num columns...  ");
   ret = write_to_vme(V1729_NB_OF_COLS_TO_READ, 0x80); 
@@ -271,7 +282,7 @@ int main(int argc, void *argv[])
     /* Wait PRETRIG before sending Trigger... but need help determining
        PRETRIG in seconds! */
   
-  usleep(5000);
+  usleep(100);
 
     /*Send Software Trigger after waiting PRETRIG*/ 
   printf("Sending Software Trigger...  "); 
