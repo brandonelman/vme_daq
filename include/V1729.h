@@ -63,7 +63,7 @@ int get_pedestals(int pedestals[V1729_RAM_DEPH], unsigned int buffer32[V1729_RAM
 int mask_buffer(unsigned int buffer32[V1729_RAM_DEPH/2], unsigned int buffer16[V1729_RAM_DEPH]);
 
 int reorder(unsigned int trig_rec, unsigned int post_trig, uint32_t num_columns, 
-            unsigned int MINVER[4], unsigned int MAXVER[4], unsigned int buffer16[V1729_RAM_DEPH/2], 
+            unsigned int MINVER[4], unsigned int MAXVER[4], unsigned int buffer16[V1729_RAM_DEPH], 
             unsigned short ch0[2560],unsigned short ch1[2560], unsigned short ch2[2560],
             unsigned short ch3[2560]);
 

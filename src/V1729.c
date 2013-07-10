@@ -29,7 +29,9 @@
 
 // ############################################################################ 
 
-CVErrorCodes write_to_vme(uint32_t vme_addr, uint32_t data_to_write)                  
+/* write_to_vme allows you to perform a single write cycle
+   of data_to_write at the register vme_addr */
+CVErrorCodes write_to_vme(uint32_t vme_addr, uint32_t data_to_write) 
 {
   CVDataWidth data_size = cvD32;
   unsigned short addr_mode = cvA32_U_DATA;
@@ -37,6 +39,9 @@ CVErrorCodes write_to_vme(uint32_t vme_addr, uint32_t data_to_write)
   return CAENVME_WriteCycle(handle, vme_addr, &data_to_write, addr_mode, data_size); 
 }
 
+/* read_from_vme allows you to perform a single read cycle
+   at the register vme_addr which is then stored in the 
+   vme_data variable */
 CVErrorCodes read_from_vme(uint32_t vme_addr)                  
 {
   CVDataWidth data_size = cvD32;
@@ -45,16 +50,21 @@ CVErrorCodes read_from_vme(uint32_t vme_addr)
   return CAENVME_ReadCycle(handle, vme_addr, &vme_data, addr_mode, data_size);
 }
 
+/* reset_vme() sends a reset order to the board. This does 
+   NOT change the values currently stored in the registers
+   of the board, but rather simply resets the current state */
 CVErrorCodes reset_vme()
 {
   return write_to_vme(V1729_RESET_BOARD, 1); 
 }
 
+/* Places the V1729A Board in "acquisition" mode */
 CVErrorCodes start_acq()
 {
   return write_to_vme(V1729_START_ACQUISITION, 1); 
 }
 
+/* Mask Buffer places the data stored in buffer32 into buffer16 */
 int mask_buffer(unsigned int buffer32[V1729_RAM_DEPH/2], unsigned int buffer16[V1729_RAM_DEPH])
 {
   int i;
@@ -331,40 +341,34 @@ int get_pedestals(int pedestals[V1729_RAM_DEPH],
   /* Saving value of TRIGGER_TYPE register for resetting later */
   printf("    Saving value of TRIGGER_TYPE for resetting later..");
   ret = read_from_vme(V1729_TRIGGER_TYPE);
- 
   if (ret != cvSuccess)
   {
     printf(" Loading TRIGGER_TYPE failed with error: %d \n", ret);
     return 0;
   }  
   else printf(" Load TRIGGER_TYPE successful\n");
-
   trig_type = vme_data&0x3f;
 
-   /* Saving value of CHANNEL_MASK register for resetting later */
+  /* Saving value of CHANNEL_MASK register for resetting later */
   printf("    Saving value of CHANNEL_MASK for resetting later..");
   ret = read_from_vme(V1729_CHANNEL_MASK);
- 
   if (ret != cvSuccess)
   {
     printf(" Loading CHANNEL_MASK failed with error: %d \n", ret);
     return 0;
   }  
   else printf(" Load CHANNEL_MASK successful\n");
-
   ch_mask = vme_data&0xf;
 
- /* Saving V1729_NB_OF_COLS_TO_READ's original value for resetting later*/
+  /* Saving V1729_NB_OF_COLS_TO_READ's original value for resetting later */
   printf("    Saving number of columns for resetting later..");
   ret = read_from_vme(V1729_NB_OF_COLS_TO_READ);
- 
   if (ret != cvSuccess)
   {
     printf(" Loading num. of columns failed with error: %d \n", ret);
     return 0;
   }  
   else printf(" Load number of columns successful\n");
-
   old_cols = vme_data&0xff;
 
 
@@ -382,7 +386,7 @@ int get_pedestals(int pedestals[V1729_RAM_DEPH],
 
   /*Sets trigger to random software */ 
   printf("    Setting trigger to random software for finding pedestals..."); 
-  ret = write_to_vme(V1729_TRIGGER_TYPE, 0x8);  //trigger random sofware
+  ret = write_to_vme(V1729_TRIGGER_TYPE, 0x8);  
   
   if (ret != cvSuccess)
   {
@@ -426,13 +430,14 @@ int get_pedestals(int pedestals[V1729_RAM_DEPH],
       CAENVME_End(handle); 
     }
     /*After receiving interrupt must acknowledge
-      by writing 0 in interrupt register.*/
+      by writing 0 in interrupt register.
     ret = write_to_vme(V1729_INTERRUPT, 0); 
     if (ret != cvSuccess)
     {
       printf("    Interrupt Acknowledge failed with error %d\n", ret);
       return 0;
     }  
+    */
 
     /*Read VME Ram*/
     ret = read_vme_ram(buffer32);
@@ -462,18 +467,9 @@ int get_pedestals(int pedestals[V1729_RAM_DEPH],
     {
       pedestals[j*4 + ch] = pedestals[j*4 + ch] / (50);
       meanpedestal[ch] = meanpedestal[ch] + (float)pedestals[j*4 + ch]; 
-      printf("Pedestals[j*4+ch]: %d\n", pedestals[j*4+ch]);
-      printf("meanpedestal[ch] = %f\n", meanpedestal[ch]);
-      printf("(float)pedestals[j*4+ch]: %f\n", (float)pedestals[j*4+ch]);
-      printf("meanpedestal[ch] = %f\n",  meanpedestal[ch] + (float)pedestals[j*4 + ch]); 
     }
 
-  for (ch = 0; ch < 4; ch++) meanpedestal[ch] = meanpedestal[ch]/2560.0;
-
-  printf("meanpedestal[0]: %f\n",meanpedestal[0]); 
-  printf("meanpedestal[1]: %f\n",meanpedestal[1]); 
-  printf("meanpedestal[2]: %f\n",meanpedestal[2]); 
-  printf("meanpedestal[3]: %f\n",meanpedestal[3]); 
+  for (ch = 0; ch < 4; ch++) meanpedestal[ch] = meanpedestal[ch]/2560;
 
   for (k = 0; k < 2560; k++)
     for (ch = 0; ch < 4; ch++)
@@ -517,28 +513,28 @@ int get_pedestals(int pedestals[V1729_RAM_DEPH],
 
 /* Reorders data as described by equations in manual */
 int reorder(unsigned int trig_rec, unsigned int post_trig, uint32_t num_columns, 
-            unsigned int MINVER[4], unsigned int MAXVER[4], unsigned int buffer16[V1729_RAM_DEPH/2], 
+            unsigned int MINVER[4], unsigned int MAXVER[4], unsigned int buffer16[V1729_RAM_DEPH], 
             unsigned short ch0[2560],unsigned short ch1[2560], unsigned short ch2[2560], 
             unsigned short ch3[2560])
 {
   int i, j;
   int end_cell;
-  int new_num_col;
   int cor_ver = 0;
   float ver[4];
 
   for (i = 0; i < 4; i++)
   {
-    ver[i] = (float)(buffer16[1+3-i] - MINVER[i])/(float)(MAXVER[i]-MINVER[i]);
+    ver[i] = (float)(buffer16[4-i] - MINVER[i])/(float)(MAXVER[i]-MINVER[i]);
     ;
     cor_ver = cor_ver + (int)(20*ver[i]/4);
   }
+  
+  /* These Formulas look wrong compared to manual, but they were used by CAEN */
+  end_cell = (20 * (128 - trig_rec + post_trig) + 1) % 2560;
 
-  end_cell = (20 * (128 - (trig_rec) + post_trig) + 1) % 2560;
-  new_num_col = num_columns * 20;
-  for (i =0; i < new_num_col; i++)
+  for (i = 0; i < 2560; i++)
   {
-    j = (new_num_col + i + end_cell - cor_ver+20) % new_num_col;
+    j = (2560 + i + end_cell - cor_ver+20) % 2560;
     ch3[i] = buffer16[4*j+12];
     ch2[i] = buffer16[4*j+13]; 
     ch1[i] = buffer16[4*j+14];
@@ -548,6 +544,7 @@ int reorder(unsigned int trig_rec, unsigned int post_trig, uint32_t num_columns,
   return 1;
 }
 
+/* Saves data to files Ch#.dat */
 int save(unsigned short ch0[2560], unsigned short ch1[2560], 
          unsigned short ch2[2560], unsigned short ch3[2560])
 {
@@ -555,41 +552,37 @@ int save(unsigned short ch0[2560], unsigned short ch1[2560],
   int channel_mask;
   int i;
   char s[30];
-  int new_num_cols;
+ 
   int num_cols;
   CVErrorCodes ret;
 
   /* Finding number of columns to read */
   printf("    Loading number of columns ..");
   ret = read_from_vme(V1729_NB_OF_COLS_TO_READ);
- 
   if (ret != cvSuccess)
   {
     printf(" Loading num. of columns failed with error: %d \n", ret);
     return 0;
   }  
   else printf(" Load number of columns successful\n");
-
   num_cols = vme_data&0xff;
-  new_num_cols = num_cols*20;
+  
   /* Finding value of channel mask */
   printf("    Finding value of CHANNEL_MASK..");
   ret = read_from_vme(V1729_CHANNEL_MASK);
- 
   if (ret != cvSuccess)
   {
     printf(" Loading CHANNEL_MASK failed with error: %d \n", ret);
     return 0;
   }  
   else printf(" Load CHANNEL_MASK successful\n");
-
   channel_mask = vme_data&0xf;
 
   /* Saving files based on your channel mask selection */
   if(channel_mask&0x1)
   {
     ch[0] = fopen("Ch_0.dat", "w+b");
-    for (i = 40; i < new_num_cols; i++)
+    for (i = 0; i < 2560; i++)
     {
       sprintf(s, "%d\n", ch0[i]);
       fwrite(s, 1, strlen(s), ch[0]);
@@ -600,7 +593,7 @@ int save(unsigned short ch0[2560], unsigned short ch1[2560],
   if(channel_mask&0x2)
   {
     ch[1] = fopen("Ch_1.dat", "w+b");
-    for (i = 40; i < new_num_cols; i++)
+    for (i = 0; i < 2560; i++)
     {
       sprintf(s, "%d\n", ch1[i]);
       fwrite(s, 1, strlen(s), ch[1]);
@@ -611,7 +604,7 @@ int save(unsigned short ch0[2560], unsigned short ch1[2560],
   if(channel_mask&0x4)
   {
     ch[2] = fopen("Ch_2.dat", "w+b");
-    for (i = 40; i < new_num_cols; i++)
+    for (i = 0; i < 2560; i++)
     {
       sprintf(s, "%d\n", ch2[i]);
       fwrite(s, 1, strlen(s), ch[2]);
@@ -622,7 +615,7 @@ int save(unsigned short ch0[2560], unsigned short ch1[2560],
   if(channel_mask&0x8)
   {
     ch[3] = fopen("Ch_3.dat", "w+b");
-    for (i = 40; i < new_num_cols; i++)
+    for (i = 0; i < 2560; i++)
     {
       sprintf(s, "%d\n", ch3[i]);
       fwrite(s, 1, strlen(s), ch[3]);

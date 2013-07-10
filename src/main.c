@@ -20,23 +20,24 @@
 
 int main(int argc, void *argv[])
 {
-  CVBoardTypes vme_board = cvV2718; //Type of Board
-  short link = 0; //Link number 
-  short device = 0; //Device Number
-  CVErrorCodes ret; //Stores Error Codes for Debugging
+  CVBoardTypes vme_board = cvV2718; /* Type of Board: VX2718 */
+  short link = 0; /* Link number */ 
+  short device = 0; /* Device Number */
+  CVErrorCodes ret; /* Stores Error Codes for Debugging */
 
-  uint32_t trig_lev = 0x000; //trigger level 
-  uint32_t active_channel; //active channel on the frontend of board
-  uint32_t trig_type; //type of trigger (software, auto, external, etc)
-  uint32_t num_columns; //number of columns to read from MATACQ matrix
-  uint32_t post_trig; //post trigger value
+  /* desired trigger treshhold = (2000/16^3)(trig_lev) - 1000 */
+  uint32_t trig_lev = 0x400;
+  uint32_t active_channel; /* active channels on the frontend of board */
+  uint32_t num_columns; /* number of columns to read from MATACQ matrix */
+  uint32_t post_trig; /* post trigger value */
 
-  int count; //number of bytes transferred for BLT
   int mask;
   int ch;
   int buffer;
   int i;
-  unsigned int buffer32[V1729_RAM_DEPH/2]; //Two buffers for storing BLT data.
+
+  /* Two buffers for storing data from RAM */
+  unsigned int buffer32[V1729_RAM_DEPH/2]; 
   unsigned int buffer16[V1729_RAM_DEPH]; 
 
   for (i=0; i<V1729_RAM_DEPH/2; i++)
@@ -54,7 +55,7 @@ int main(int argc, void *argv[])
                                      understanding these.*/
 
   unsigned int trig_rec; /* TRIG_REC must be read to automatically
-                            restart acquisitions. Its value helps 
+                            restart acquisitions. Its value also helps 
                             determine the position of the trigger in 
                             the acquisition window. */
 
@@ -113,10 +114,13 @@ int main(int argc, void *argv[])
   }  
   else printf("Load Trigger threshold command successful\n");
 
-  /* Initialization of Paramaters */
+  /********************************************************************
+   Initialize Necessary Parameters
+  ********************************************************************/
+ 
     /* FP Frequency */
   printf("Attempting to change pilot frequency... ");
-  ret = write_to_vme(V1729_FP_FREQUENCY, 0x01);/*2 GHz*/
+  ret = write_to_vme(V1729_FP_FREQUENCY, 0x01);//2 GHz
   if (ret != cvSuccess)
   {
     printf("Changing pilot frequency failed with error: %d \n", ret);
@@ -125,7 +129,7 @@ int main(int argc, void *argv[])
   else printf("Change pilot frequency successful\n");
   
 
-    /* Num Columns */ 
+    /* Num Columns */
   printf("Attempting to set num columns...  ");
   ret = write_to_vme(V1729_NB_OF_COLS_TO_READ, 0x80); 
   if (ret != cvSuccess)
@@ -135,7 +139,7 @@ int main(int argc, void *argv[])
   }  
   else printf("Change num columns successful\n");
   
-    /* Channel Mask */
+    /* Channel Mask  */
   printf("Attempting to set active channel...  ");
   ret = write_to_vme(V1729_CHANNEL_MASK, 0xf); 
   if (ret != cvSuccess)
@@ -145,10 +149,18 @@ int main(int argc, void *argv[])
   }  
   else printf("Change active channel successful\n");
   
-    /* Pre Trigger: Can be modified at LSB and MSB */ 
+    /* Pre Trigger: Can be modified at LSB and MSB */
+  printf("Setting PRETRIG LSB... ");
+  ret = write_to_vme(V1729_PRETRIG_LSB, 0x00); 
+  if (ret != cvSuccess)
+  {
+    printf("Setting PRETRIG_LSB failed with error: %d \n", ret);
+    return 0;
+  }  
+  else printf("Setting PRETRIG_LSB successful\n");
 
   printf("Setting PRETRIG MSB... ");
-  ret = write_to_vme(V1729_PRETRIG_MSB, 0x28);
+  ret = write_to_vme(V1729_PRETRIG_MSB, 0x28); 
   if (ret != cvSuccess)
   {
     printf("Setting PRETRIG_MSB failed with error: %d \n", ret);
@@ -166,39 +178,43 @@ int main(int argc, void *argv[])
   }  
   else printf("Setting POSTTRIG_LSB successful\n");
 
+  printf("Setting POST_TRIG MSB... ");
+  ret = write_to_vme(V1729_POSTTRIG_MSB, 0x0);
+  if (ret != cvSuccess)
+  {
+    printf("Setting POSTTRIG_MSB failed with error: %d \n", ret);
+    return 0;
+  }  
+  else printf("Setting POSTTRIG_MSB successful\n");
+
+    /* Trigger Type */
+  printf("Setting value of TRIGGER_TYPE ..");
+  ret = write_to_vme(V1729_TRIGGER_TYPE, 0x7); /* Trigger on Software OR Discriminator Falling Edge */
+  if (ret != cvSuccess)
+  {
+    printf(" Setting TRIGGER_TYPE failed with error: %d \n", ret);
+    return 0;
+  }  
+  else printf(" Set TRIGGER_TYPE successful\n");
 
 
-  /* Loading of Parameters for Reordering and Saving Data Later */
-
+  /********************************************************************
+   Loading of Parameters for Reordering and Saving Data Later 
+  ********************************************************************/
     /* Num Columns */
   printf("Loading number of columns ..");
   ret = read_from_vme(V1729_NB_OF_COLS_TO_READ);
- 
   if (ret != cvSuccess)
   {
     printf(" Loading num. of columns failed with error: %d \n", ret);
     return 0;
   }  
   else printf(" Load number of columns successful\n");
-
   num_columns = vme_data&0xff; /*0xff is 11111111 in binary. 
                                  Default value is 128 so
                                  128&0xff = 128, all the columns */
 
-    /* TRIGGER TYPE */
-  printf("Finding value of TRIGGER_TYPE ..");
-  ret = read_from_vme(V1729_TRIGGER_TYPE);
- 
-  if (ret != cvSuccess)
-  {
-    printf(" Loading TRIGGER_TYPE failed with error: %d \n", ret);
-    return 0;
-  }  
-  else printf(" Load TRIGGER_TYPE successful\n");
-
-  trig_type = vme_data&0x3f;
-
-    /* Channel Mask */
+      /* Channel Mask */
   printf("Attempting to determine active channel...  ");
   ret = read_from_vme(V1729_CHANNEL_MASK); 
   if (ret != cvSuccess)
@@ -229,12 +245,16 @@ int main(int argc, void *argv[])
     return 0;
   }  
   else printf("    Load POSTTRIG_MSB successful\n");
-  post_trig = post_trig + (vme_data&0xFF)*256; 
+  post_trig = post_trig + (vme_data&0xff)*256; 
 
   printf("Post Trig after MSB: %d\n", post_trig);
   printf("Current active channel: %d\n", active_channel);
-  printf("Current Trigger type: %d\n", trig_type);
   printf("num_columns: %d\n", num_columns);
+
+
+  /*********************************************************
+   Perform Pre-Acquisition Calibrations 
+   *********************************************************/
 
   /* Perform Fast Vernier Calibration */
   printf("Attempting to perform Vernier calibration\n");
@@ -266,9 +286,11 @@ int main(int argc, void *argv[])
   
 
 
-  /* Begin Actual Acquisition */
+  /*************************************************** 
+   Begin Actual Acquisition
+   **************************************************/
 
-    /*Send start acquisition signal*/
+  /*Send start acquisition signal*/
   printf("Attempting to start acquisition...  ");
   ret = start_acq();  
   if (ret != cvSuccess)
@@ -279,12 +301,13 @@ int main(int argc, void *argv[])
   }  
   else printf("Sending Start Acquisition signal succesful\n");
 
-    /* Wait PRETRIG before sending Trigger... but need help determining
-       PRETRIG in seconds! */
+  /* Wait PRETRIG before sending Trigger... but need help determining
+     PRETRIG in seconds! */
   
-  usleep(100);
+  usleep(1000); /* NOT GOOD MUST CHANGE */
 
-    /*Send Software Trigger after waiting PRETRIG*/ 
+  /*Send Software Trigger after waiting PRETRIG*/ 
+  /*
   printf("Sending Software Trigger...  "); 
   ret = write_to_vme(V1729_SOFTWARE_TRIGGER, 1); 
   if (ret != cvSuccess)
@@ -294,8 +317,8 @@ int main(int argc, void *argv[])
     return 0;
   }  
   else printf("Sending Software Trigger succesful\n");
-
-    /*Wait for Interrupt from V1729A*/
+  */
+  /*Wait for Interrupt from V1729A*/
   printf("Waiting for interrupt from V1729A...");
   if ( wait_for_interrupt() == 0 )
   {
@@ -305,8 +328,8 @@ int main(int argc, void *argv[])
   else printf(" Successfully found interrupt.\n");
 
 
-    /*After receiving interrupt must acknowledge
-      by writing 0 in interrupt register.*/
+  /*After receiving interrupt must acknowledge
+      by writing 0 in interrupt register.
   printf("Interrupt found. Attempting to acknowledge..\n");
   ret = write_to_vme(V1729_INTERRUPT, 0); 
   if (ret != cvSuccess)
@@ -315,8 +338,9 @@ int main(int argc, void *argv[])
     return 0;
   }  
   else printf("Interrupt Acknowledged succesfully\n");
+  */
 
-    /*Read VME Ram*/
+  /*Read VME Ram*/
   printf("Attempting to read vme ram...");
   ret = read_vme_ram(buffer32);
   if (ret != cvSuccess)
@@ -327,8 +351,8 @@ int main(int argc, void *argv[])
   }  
   else printf("Reading VME RAM succesful\n");
 
-    /*Read TRIG_REC after VME RAM: Necessary for determining
-      trigger position in window */
+  /*Read TRIG_REC after VME RAM: Necessary for determining
+    trigger position in window */
   printf("Attempting to read TRIG_REC... ");
   ret = read_from_vme(V1729_TRIG_REC); 
   if (ret != cvSuccess)
@@ -338,9 +362,9 @@ int main(int argc, void *argv[])
     return 0;
   }  
   else printf("Reading TRIG_REC succesful\n");
-  trig_rec = vme_data&0xFF;
+  trig_rec = vme_data&0xff;
 
-    /*Mask Buffer*/
+  /*Mask Buffer*/
   printf("Attempting to mask buffer ... ");
   if( mask_buffer(buffer32, buffer16) == 0 ) 
     {
@@ -351,7 +375,11 @@ int main(int argc, void *argv[])
   else
     printf(" Buffer masked successfully\n"); 
 
-    /* Subtraction of Pedestals */
+  /*************************************************** 
+    Temporal and Pedestal Correction of Data
+  ***************************************************/
+
+  /* Subtraction of Pedestals */
   printf("Subtracting pedestals... \n");
   if ((active_channel == 0xf) && (num_columns == 128)) 
   {
@@ -359,18 +387,12 @@ int main(int argc, void *argv[])
       for (ch = 0; ch < 4; ch++)
       {
         buffer = (int)(0xffff&buffer16[12 + i*4 + ch]);
-        printf("buffer: %d     ", buffer);
-        printf("pedestals[i*4+ch]: %d       ", pedestals[i*4+ch]);
-        printf("buffer - pedestals[i*4 + ch]: %d\n", buffer - pedestals[i*4 + ch]);
 
         if( (buffer - pedestals[i*4 + ch]) < 0 ) buffer16[12 + i*4 + ch] = 0;
         else buffer16[12 + i*4 + ch] = (unsigned int)(buffer - pedestals[i*4 + ch]);
       }
-
-    printf("trig_rec: %d\n", trig_rec);
-    printf("post_trig before reorder: %d\n", post_trig);
   
-      /* Reorder Data */
+    /* Reorder Data */
     printf("Reordering data.\n");
     reorder(trig_rec, post_trig, num_columns, MINVER, MAXVER, buffer16, ch0, ch1, ch2, ch3);
 
@@ -386,7 +408,11 @@ int main(int argc, void *argv[])
     return 0;
   }
 
-    /*Send Reset to End Acquisition*/
+ /**************************************************  
+  End Acquisition and Close Board 
+  **************************************************/
+
+  /*Send Reset to End Acquisition*/
   printf("Attempting to reset board to end acquisition... ");
   ret = reset_vme();
   if (ret != cvSuccess)
@@ -405,7 +431,6 @@ int main(int argc, void *argv[])
     printf("Closing board failed with error %d\n", ret);
     return 0;
   }  
-
   else printf("Closed Board succesfully\n");
 
   return 1; 
