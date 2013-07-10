@@ -35,7 +35,7 @@ int main(int argc, void *argv[])
   int ch;
   int buffer;
   int i;
-
+  int interrupts;
   /* Two buffers for storing data from RAM */
   unsigned int buffer32[V1729_RAM_DEPH/2]; 
   unsigned int buffer16[V1729_RAM_DEPH]; 
@@ -265,9 +265,7 @@ int main(int argc, void *argv[])
   }
   else printf("Successful vernier calibration!\n");
 
-  /* Find Pedestals which will later be subtracted -> Need Help 
-     determining if this get_pedestals function is working correctly.
-     Using CAEN's, but it looks erroneous */
+  /* Find Pedestals which will later be subtracted*/
 
   printf("Attempting to find pedestals... \n");
   if (get_pedestals(pedestals, buffer32, buffer16) == 0)
@@ -289,125 +287,108 @@ int main(int argc, void *argv[])
   /*************************************************** 
    Begin Actual Acquisition
    **************************************************/
-
-  /*Send start acquisition signal*/
-  printf("Attempting to start acquisition...  ");
-  ret = start_acq();  
-  if (ret != cvSuccess)
+  while (interrupts < 5)
   {
-    printf("Sending Start Acquisition signal failed with error %d\n", ret);
-    reset_vme();
-    return 0;
-  }  
-  else printf("Sending Start Acquisition signal succesful\n");
-
-  /* Wait PRETRIG before sending Trigger... but need help determining
-     PRETRIG in seconds! */
-  
-  usleep(1000); /* NOT GOOD MUST CHANGE */
-
-  /*Send Software Trigger after waiting PRETRIG*/ 
-  /*
-  printf("Sending Software Trigger...  "); 
-  ret = write_to_vme(V1729_SOFTWARE_TRIGGER, 1); 
-  if (ret != cvSuccess)
-  {
-    printf("Sending Software Trigger failed with error %d\n", ret);
-    reset_vme();
-    return 0;
-  }  
-  else printf("Sending Software Trigger succesful\n");
-  */
-  /*Wait for Interrupt from V1729A*/
-  printf("Waiting for interrupt from V1729A...");
-  if ( wait_for_interrupt() == 0 )
-  {
-    reset_vme();
-    CAENVME_End(handle);
-  }
-  else printf(" Successfully found interrupt.\n");
-
-
-  /*After receiving interrupt must acknowledge
-      by writing 0 in interrupt register.
-  printf("Interrupt found. Attempting to acknowledge..\n");
-  ret = write_to_vme(V1729_INTERRUPT, 0); 
-  if (ret != cvSuccess)
-  {
-    printf("Interrupt Acknowledge failed with error %d\n", ret);
-    return 0;
-  }  
-  else printf("Interrupt Acknowledged succesfully\n");
-  */
-
-  /*Read VME Ram*/
-  printf("Attempting to read vme ram...");
-  ret = read_vme_ram(buffer32);
-  if (ret != cvSuccess)
-  {
-    printf("Reading VME RAM failed with error %d\n", ret);
-    reset_vme();
-    return 0;
-  }  
-  else printf("Reading VME RAM succesful\n");
-
-  /*Read TRIG_REC after VME RAM: Necessary for determining
-    trigger position in window */
-  printf("Attempting to read TRIG_REC... ");
-  ret = read_from_vme(V1729_TRIG_REC); 
-  if (ret != cvSuccess)
-  {
-    printf("Reading TRIG_REC failed with error %d\n", ret);
-    reset_vme();
-    return 0;
-  }  
-  else printf("Reading TRIG_REC succesful\n");
-  trig_rec = vme_data&0xff;
-
-  /*Mask Buffer*/
-  printf("Attempting to mask buffer ... ");
-  if( mask_buffer(buffer32, buffer16) == 0 ) 
+    /*Send start acquisition signal*/
+    printf("Attempting to start acquisition...  ");
+    ret = start_acq();  
+    if (ret != cvSuccess)
     {
-    printf(" Masking the buffer has failed with error %d\n", ret);
-    reset_vme();
-    return 0;
+      printf("Sending Start Acquisition signal failed with error %d\n", ret);
+      reset_vme();
+      return 0;
+    }  
+    else printf("Sending Start Acquisition signal succesful\n");
+
+    /*Wait for Interrupt from V1729A*/
+    printf("Waiting for interrupt from V1729A...");
+    if ( wait_for_interrupt() == 0 )
+    {
+      reset_vme();
+      CAENVME_End(handle);
     }
-  else
-    printf(" Buffer masked successfully\n"); 
+    else printf(" Successfully found interrupt.\n");
+    interrupts++;
 
-  /*************************************************** 
-    Temporal and Pedestal Correction of Data
-  ***************************************************/
+    /*After receiving interrupt must acknowledge
+        by writing 0 in interrupt register.*/
+    printf("Interrupt found. Attempting to acknowledge..\n");
+    ret = write_to_vme(V1729_INTERRUPT, 0); 
+    if (ret != cvSuccess)
+    {
+      printf("Interrupt Acknowledge failed with error %d\n", ret);
+      return 0;
+    }  
+    else printf("Interrupt Acknowledged succesfully\n");
 
-  /* Subtraction of Pedestals */
-  printf("Subtracting pedestals... \n");
-  if ((active_channel == 0xf) && (num_columns == 128)) 
-  {
-    for (i = 0; i < 2560; i++)
-      for (ch = 0; ch < 4; ch++)
+    /*Read VME Ram*/
+    printf("Attempting to read vme ram...");
+    ret = read_vme_ram(buffer32);
+    if (ret != cvSuccess)
+    {
+      printf("Reading VME RAM failed with error %d\n", ret);
+      reset_vme();
+      return 0;
+    }  
+    else printf("Reading VME RAM succesful\n");
+
+    /*Read TRIG_REC after VME RAM: Necessary for determining
+      trigger position in window */
+    printf("Attempting to read TRIG_REC... ");
+    ret = read_from_vme(V1729_TRIG_REC); 
+    if (ret != cvSuccess)
+    {
+      printf("Reading TRIG_REC failed with error %d\n", ret);
+      reset_vme();
+      return 0;
+    }  
+    else printf("Reading TRIG_REC succesful\n");
+    trig_rec = vme_data&0xff;
+
+    /*Mask Buffer*/
+    printf("Attempting to mask buffer ... ");
+    if( mask_buffer(buffer32, buffer16) == 0 ) 
       {
-        buffer = (int)(0xffff&buffer16[12 + i*4 + ch]);
-
-        if( (buffer - pedestals[i*4 + ch]) < 0 ) buffer16[12 + i*4 + ch] = 0;
-        else buffer16[12 + i*4 + ch] = (unsigned int)(buffer - pedestals[i*4 + ch]);
+      printf(" Masking the buffer has failed with error %d\n", ret);
+      reset_vme();
+      return 0;
       }
-  
-    /* Reorder Data */
-    printf("Reordering data.\n");
-    reorder(trig_rec, post_trig, num_columns, MINVER, MAXVER, buffer16, ch0, ch1, ch2, ch3);
+    else
+      printf(" Buffer masked successfully\n"); 
 
-    printf("Saving data... \n");
-    save(ch0, ch1, ch2, ch3);
-  }
- 
-  else 
-  {
-    printf("active_channel: %d", active_channel);
-    printf("num_columns: %d", num_columns);
-    printf("Mask Channel not Valid\n"); 
-    return 0;
-  }
+    /*************************************************** 
+      Temporal and Pedestal Correction of Data
+    ***************************************************/
 
+    /* Subtraction of Pedestals */
+    printf("Subtracting pedestals... \n");
+    if ((active_channel == 0xf) && (num_columns == 128)) 
+    {
+      for (i = 0; i < 2560; i++)
+        for (ch = 0; ch < 4; ch++)
+        {
+          buffer = (int)(0xffff&buffer16[12 + i*4 + ch]);
+
+          if( (buffer - pedestals[i*4 + ch]) < 0 ) buffer16[12 + i*4 + ch] = 0;
+          else buffer16[12 + i*4 + ch] = (unsigned int)(buffer - pedestals[i*4 + ch]);
+        }
+    
+      /* Reorder Data */
+      printf("Reordering data.\n");
+      reorder(trig_rec, post_trig, num_columns, MINVER, MAXVER, buffer16, ch0, ch1, ch2, ch3);
+
+      printf("Saving data... \n");
+      save(ch0, ch1, ch2, ch3);
+    }
+   
+    else 
+    {
+      printf("active_channel: %d", active_channel);
+      printf("num_columns: %d", num_columns);
+      printf("Mask Channel not Valid\n"); 
+      return 0;
+    }
+  }
  /**************************************************  
   End Acquisition and Close Board 
   **************************************************/

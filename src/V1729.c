@@ -581,7 +581,7 @@ int save(unsigned short ch0[2560], unsigned short ch1[2560],
   /* Saving files based on your channel mask selection */
   if(channel_mask&0x1)
   {
-    ch[0] = fopen("Ch_0.dat", "w+b");
+    ch[0] = fopen("Ch_0.dat", "a+b");
     for (i = 0; i < 2560; i++)
     {
       sprintf(s, "%d\n", ch0[i]);
@@ -592,7 +592,7 @@ int save(unsigned short ch0[2560], unsigned short ch1[2560],
   
   if(channel_mask&0x2)
   {
-    ch[1] = fopen("Ch_1.dat", "w+b");
+    ch[1] = fopen("Ch_1.dat", "a+b");
     for (i = 0; i < 2560; i++)
     {
       sprintf(s, "%d\n", ch1[i]);
@@ -603,7 +603,7 @@ int save(unsigned short ch0[2560], unsigned short ch1[2560],
 
   if(channel_mask&0x4)
   {
-    ch[2] = fopen("Ch_2.dat", "w+b");
+    ch[2] = fopen("Ch_2.dat", "a+b");
     for (i = 0; i < 2560; i++)
     {
       sprintf(s, "%d\n", ch2[i]);
@@ -614,7 +614,7 @@ int save(unsigned short ch0[2560], unsigned short ch1[2560],
 
   if(channel_mask&0x8)
   {
-    ch[3] = fopen("Ch_3.dat", "w+b");
+    ch[3] = fopen("Ch_3.dat", "a+b");
     for (i = 0; i < 2560; i++)
     {
       sprintf(s, "%d\n", ch3[i]);
