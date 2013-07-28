@@ -1,44 +1,16 @@
-TARGET = vme_daq
-SHELL  = /bin/bash
-.SUFFIXES: .c .o .h .so 
-VPATH  = lib:src:include:
-vpath %.c src:
+CC=gcc
+CFLAGS = -Iinclude/ 
+OBJS = lib/V1729.o lib/V812.o
+LIBS = -lm -lCAENVME
 
-DESTDIR  = bin
-BUILDDIR = lib
-INCDIR   = include
-SRCDIR   = src
-CXX      = gcc
+all: $(OBJS)
+	$(CC)	-o bin/test $(OBJS) $(LIBS) $(CFLAGS) src/main.c
 
-CFLAGS += -Iinclude 
+lib/V1729.o: include/V1729.h include/CAENVMElib.h src/V1729.c
+	$(CC) $(CFLAGS) -c src/V1729.c -o lib/V1729.o
 
-LDLIBS += -lm -lCAENVME 
-
-OBJS := V1729.o 
-
-HEADERS := $(OBJS:%.o=$(INCDIR)/%.h)
-LIBS    := $(OBJS:%.o=$(BUILDDIR)/%.o)
-
-default : main 
-
-simple :  
-	$(CXX) -o $(DESTDIR)/simple src/simple.c $(CFLAGS) $(LDLIBS) 
-
-main: $(BUILDDIR)/$(OBJS) 
-	$(CXX) -o $(DESTDIR)/$(TARGET) src/main.c $(CFLAGS) $(LDLIBS) $(LIBS)
-
-$(BUILDDIR)/$(OBJS) : $(BUILDDIR)/%.o : %.h
-	$(CXX) -c -o $@ $(@:$(BUILDDIR)/%.o=$(SRCDIR)/%.c) $(CFLAGS)
-
-doc: 
-	doxygen doc/InSANE_Doxyfile #	doxygen doc/Doxyfile_insaneweb
-	cd ..
-	@echo "HTML Documentation created"
-
-.PHONY : clean doc 
-
+lib/V812.o: include/V812.h include/CAENVMElib.h include/V1729.h src/V812.c
+	$(CC) $(CFLAGS) -c src/V812.c -o lib/V812.o
 
 clean:
-	rm -f a.out
-	rm -f bin/$(TARGET)
-	rm -f lib/*.o
+	rm -f bin/test $(OBJECTS)

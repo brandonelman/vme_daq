@@ -104,12 +104,41 @@ int wait_for_interrupt(void)
 
     interrupt = vme_data&1;
 
-    if(timeout_counter > 0x1ffffff)
+    if(timeout_counter > 0x1fffff)
     {
     printf(" Wait for interrupt has timed out.\n");
     return 0;
     }
   }
+  return 1;
+}
+
+int wait_for_interrupt_vme(void)
+{
+  int vector;
+  CVErrorCodes ret;
+  ret = CAENVME_IRQEnable(handle, cvIRQ3);
+  if (ret != cvSuccess)
+  {
+    printf("Failed enabling IRQ3 with error %d", ret); 
+    return 0;
+  }
+
+  ret = CAENVME_IRQWait(handle, cvIRQ3, 0x1); 
+  if (ret != cvSuccess)
+  {
+    printf("Failed waiting for interrupt with error %d", ret); 
+    return 0;
+  }
+
+  ret = CAENVME_IACKCycle(handle, cvIRQ3, &vector, cvD32);
+  if (ret != cvSuccess)
+  {
+    printf("Failed IACKCycle with error %d", ret); 
+    return 0;
+  }
+
+
   return 1;
 }
 
@@ -557,32 +586,32 @@ int save(unsigned short ch0[2560], unsigned short ch1[2560],
   CVErrorCodes ret;
 
   /* Finding number of columns to read */
-  printf("    Loading number of columns ..");
+  /*printf("    Loading number of columns ..")*/;
   ret = read_from_vme(V1729_NB_OF_COLS_TO_READ);
   if (ret != cvSuccess)
   {
     printf(" Loading num. of columns failed with error: %d \n", ret);
     return 0;
   }  
-  else printf(" Load number of columns successful\n");
+  /*else printf(" Load number of columns successful\n");*/
   num_cols = vme_data&0xff;
   
   /* Finding value of channel mask */
-  printf("    Finding value of CHANNEL_MASK..");
+  /*printf("    Finding value of CHANNEL_MASK..");*/
   ret = read_from_vme(V1729_CHANNEL_MASK);
   if (ret != cvSuccess)
   {
     printf(" Loading CHANNEL_MASK failed with error: %d \n", ret);
     return 0;
   }  
-  else printf(" Load CHANNEL_MASK successful\n");
+  /*else printf(" Load CHANNEL_MASK successful\n");*/
   channel_mask = vme_data&0xf;
 
   /* Saving files based on your channel mask selection */
   if(channel_mask&0x1)
   {
     ch[0] = fopen("Ch_0.dat", "a+b");
-    for (i = 0; i < 2560; i++)
+    for (i = 40; i < 2560; i++)
     {
       sprintf(s, "%d\n", ch0[i]);
       fwrite(s, 1, strlen(s), ch[0]);
@@ -593,7 +622,7 @@ int save(unsigned short ch0[2560], unsigned short ch1[2560],
   if(channel_mask&0x2)
   {
     ch[1] = fopen("Ch_1.dat", "a+b");
-    for (i = 0; i < 2560; i++)
+    for (i = 40; i < 2560; i++)
     {
       sprintf(s, "%d\n", ch1[i]);
       fwrite(s, 1, strlen(s), ch[1]);
@@ -604,7 +633,7 @@ int save(unsigned short ch0[2560], unsigned short ch1[2560],
   if(channel_mask&0x4)
   {
     ch[2] = fopen("Ch_2.dat", "a+b");
-    for (i = 0; i < 2560; i++)
+    for (i = 40; i < 2560; i++)
     {
       sprintf(s, "%d\n", ch2[i]);
       fwrite(s, 1, strlen(s), ch[2]);
@@ -615,7 +644,7 @@ int save(unsigned short ch0[2560], unsigned short ch1[2560],
   if(channel_mask&0x8)
   {
     ch[3] = fopen("Ch_3.dat", "a+b");
-    for (i = 0; i < 2560; i++)
+    for (i = 40; i < 2560; i++)
     {
       sprintf(s, "%d\n", ch3[i]);
       fwrite(s, 1, strlen(s), ch[3]);

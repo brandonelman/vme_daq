@@ -55,6 +55,7 @@ CVErrorCodes reset_vme(void);
 CVErrorCodes start_acq(void);
 CVErrorCodes read_vme_ram(unsigned int buffer32[V1729_RAM_DEPH/2]);
 int wait_for_interrupt(void); 
+int wait_for_interrupt_vme(void); 
 int vernier(unsigned int MAXVER[4], unsigned int MINVER[4]);
 
 int get_pedestals(int pedestals[V1729_RAM_DEPH], unsigned int buffer32[V1729_RAM_DEPH/2], 
