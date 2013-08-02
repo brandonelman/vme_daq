@@ -21,18 +21,18 @@ for ch in range(len(data)):
     plt.xlabel('Time') 
 plt.savefig("Channels.pdf", format='pdf')
 
-ped = data[0][0]
-for sample in range(len(data[0])):
-  data[0][sample] = data[0][sample] - ped 
-
 integrated = []
 i = 0
 
 print(len(data[0]))
 num_pulses = int(len(data[0]) / 2520.0)
-
-
 print "num_pulses", num_pulses
+
+ped = data[0][0]
+for sample in range(2520*num_pulses):
+  if sample % 2520 == 0:
+    ped = data[0][sample]
+  data[0][sample] = data[0][sample]-ped
 
 for i in range(num_pulses):
   integrated.append(simps(data[0][i*2520:(i+1)*2520-1])) 
@@ -41,12 +41,12 @@ for i in range(num_pulses):
 
 savetxt("integration.txt", integrated)
 plt.figure()
-n, bins = np.histogram(integrated, bins=20)
+n, bins = np.histogram(integrated, bins=6)
 print 'n', n, 'bins', bins
 bincenters = 0.5*(bins[1:]+bins[:-1])
-menStd = np.std(bins)/np.sqrt(n)
-width = 0.05 
-plt.bar(bincenters, n, width=width, color='r', yerr=menStd)
+menStd = np.sqrt(n)
+width = 1.00 
+plt.bar(bincenters, n, width=width, color='g', yerr=menStd)
 plt.xlabel('Amplitude')
 plt.ylabel('Counts')
 plt.savefig("Integrated.pdf", format='pdf')

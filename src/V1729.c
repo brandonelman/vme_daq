@@ -1,5 +1,5 @@
-/* V1729.C : source code for V1729 module */
-/* created 14.10.2009 by Franco.LARI     */
+/* V1729.C : source code for V1729 module 
+   Last Updated: 7/28/2013 Brandon Elman */
 
 #define __LINUX__
 #include <stdlib.h>
@@ -26,8 +26,6 @@
 
 #include "CAENVMElib.h"
 #include "V1729.h"
-
-// ############################################################################ 
 
 /* write_to_vme allows you to perform a single write cycle
    of data_to_write at the register vme_addr */
@@ -92,17 +90,27 @@ int mask_buffer(unsigned int buffer32[V1729_RAM_DEPH/2], unsigned int buffer16[V
   return 1;
 }
 
+/* Standard way of discovering interrupt by scanning register. More noisy than IRQ 
+   method (see: wait_for_interrupt_vme); however, the other method isn't quite working 
+   yet possibly due to incorrect mask choices */
 int wait_for_interrupt(void)
 {
-  unsigned int timeout_counter =  0; //timeout counter for waiting on interrupt 
-  unsigned int interrupt = 0; //when 1 an interrupt has successfully been read
+  unsigned int timeout_counter =  0; /*timeout counter for waiting on interrupt*/
+  unsigned int interrupt = 0; /* When 1 an interrupt has successfully been read */
+                              /* When 3 there was an overflow of the buffer so your data is bad */
   CVErrorCodes ret;
-  while(interrupt == 0)
+  while(interrupt != 0x1)
   {
     timeout_counter++;
     ret = read_from_vme(V1729_INTERRUPT); 
 
-    interrupt = vme_data&1;
+    interrupt = vme_data&0x3;
+
+    if (interrupt == 0x3 || interrupt == 0x2)
+    {
+      printf("Overflow detected!");
+      return 2;
+    }
 
     if(timeout_counter > 0x1fffff)
     {
@@ -113,18 +121,19 @@ int wait_for_interrupt(void)
   return 1;
 }
 
+/* Preferred method of interrupt discovery.. Not tested yet */
 int wait_for_interrupt_vme(void)
 {
   int vector;
   CVErrorCodes ret;
-  ret = CAENVME_IRQEnable(handle, cvIRQ3);
+  ret = CAENVME_IRQEnable(handle, 0xf);
   if (ret != cvSuccess)
   {
     printf("Failed enabling IRQ3 with error %d", ret); 
     return 0;
   }
 
-  ret = CAENVME_IRQWait(handle, cvIRQ3, 0x1); 
+  ret = CAENVME_IRQWait(handle, cvIRQ3, 0xf); 
   if (ret != cvSuccess)
   {
     printf("Failed waiting for interrupt with error %d", ret); 
@@ -142,6 +151,8 @@ int wait_for_interrupt_vme(void)
   return 1;
 }
 
+/* Read the RAM of the ADC by realizing N successive readings of the 
+   RAM register. BLT is preferred but apparently not working */
 CVErrorCodes read_vme_ram(unsigned int buffer32[V1729_RAM_DEPH/2])
 {
   int i;
@@ -159,10 +170,11 @@ CVErrorCodes read_vme_ram(unsigned int buffer32[V1729_RAM_DEPH/2])
   }
 
   return cvSuccess;
-/*
+
+/* BROKEN BLT VERSION
   uint32_t vme_addr = CAENBASEADDRESS + V1729_RAM_DATA_VME; 
   CVDataWidth data_size = cvD32;
-  int count; //number of bytes transferred
+  int count; number of bytes transferred
 
   return  CAENVME_BLTReadCycle(handle, vme_addr, buffer32, V1729_RAM_DEPH/2, 
                                cvA32_S_BLT, data_size, &count);  
@@ -170,23 +182,20 @@ CVErrorCodes read_vme_ram(unsigned int buffer32[V1729_RAM_DEPH/2])
 }
 
 
-/* 
-This function performs the temporal interpolator (vernier) calibration. It is necessary after any changes in the sampling frequency, and is valid for weeks. It's similar to a regular acquisition sequence, except TRIG_REC need not be read. This is the slowest, but most precise calibration method. Could implement the faster method easily if desirable.
-
-UPDATE: Can't seem to find interrupt with more precise method, so attemptign to use faster method instead. */
-
-
+/* This function performs the temporal interpolator (vernier) calibration. It is necessary after any changes 
+   in the sampling frequency, and is valid for weeks. It's similar to a regular acquisition sequence, except 
+   TRIG_REC need not be read. This is one of the faster methods, but can make it more precise if necessary. */
 int vernier(unsigned int MAXVER[4], unsigned int MINVER[4])
 {
-  CVErrorCodes ret; //stores error codes for debugging
-  uint32_t old_cols; //stores previous value for resetting at end
+  CVErrorCodes ret; 
+  int i;
+  uint32_t old_cols; 
   uint32_t trig_type;
   uint32_t ch_mask; 
 
   /* Reset the Board */
   printf("    Attempting to reset board... ");
   ret = reset_vme();
-
   if(ret != cvSuccess)
   {
     printf(" Reset failed with error %d \n", ret);
@@ -197,34 +206,29 @@ int vernier(unsigned int MAXVER[4], unsigned int MINVER[4])
   /* Saving value of TRIGGER_TYPE register for resetting later */
   printf("    Saving value of TRIGGER_TYPE for resetting later..");
   ret = read_from_vme(V1729_TRIGGER_TYPE);
- 
   if (ret != cvSuccess)
   {
     printf(" Loading TRIGGER_TYPE failed with error: %d \n", ret);
     return 0;
   }  
   else printf(" Load TRIGGER_TYPE successful\n");
-
   trig_type = vme_data&0x3f;
 
   /* Saving value of CHANNEL_MASK register for resetting later */
   printf("    Saving value of CHANNEL_MASK for resetting later..");
   ret = read_from_vme(V1729_CHANNEL_MASK);
- 
   if (ret != cvSuccess)
   {
     printf(" Loading CHANNEL_MASK failed with error: %d \n", ret);
     return 0;
   }  
   else printf(" Load CHANNEL_MASK successful\n");
-
   ch_mask = vme_data&0xf;
 
 
   /*Set Trigger to Random Software*/
   printf("    Setting trigger to random software ... "); 
   ret = write_to_vme(V1729_TRIGGER_TYPE, 0x8); 
-  
   if (ret != cvSuccess)
   {
     printf(" Setting trigger type failed with error: %d \n", ret);
@@ -235,7 +239,6 @@ int vernier(unsigned int MAXVER[4], unsigned int MINVER[4])
   /* Setting mask to allow 4 Channels */
   printf("    Setting mask to allow 4 Channels ... "); 
   ret = write_to_vme(V1729_CHANNEL_MASK, 15);
-
   if (ret != cvSuccess)
   {
     printf(" Setting channel mask failed with error: %d \n", ret);
@@ -246,18 +249,16 @@ int vernier(unsigned int MAXVER[4], unsigned int MINVER[4])
   /* Saving V1729_NB_OF_COLS_TO_READ's original value for resetting later*/
   printf("    Saving number of columns for resetting later..");
   ret = read_from_vme(V1729_NB_OF_COLS_TO_READ);
- 
   if (ret != cvSuccess)
   {
     printf(" Loading num. of columns failed with error: %d \n", ret);
     return 0;
   }  
   else printf(" Load number of columns successful\n");
-
   old_cols = vme_data&0xff;
 
 
-  //As specified in manual, 0 Columns are used for fast calibration
+  /*As specified in manual, 0 Columns are used for fast calibration*/
   printf("    Setting number of columns to read to 0...");
   ret = write_to_vme(V1729_NB_OF_COLS_TO_READ, 0); 
   if (ret != cvSuccess)
@@ -265,13 +266,11 @@ int vernier(unsigned int MAXVER[4], unsigned int MINVER[4])
     printf(" Changing num. of columns failed with error: %d \n", ret);
     return 0;
   }  
-
   else printf(" Changing number of columns successful\n");
 
-  //Begins acquisition sequence
+  /*Begins acquisition sequence*/
   printf("    Attempting to begin acquisition sequence... ");
   ret = start_acq();
- 
   if (ret != cvSuccess)
   {
     printf(" Sending Start Acquisition signal failed with error %d\n", ret);
@@ -279,15 +278,11 @@ int vernier(unsigned int MAXVER[4], unsigned int MINVER[4])
   }  
   else printf(" Sending Start Acquisition signal succesful\n");
 
+  /* Wait for Interrupt */
   printf("    Waiting for interrupt from V1729A...");
-  
   if(wait_for_interrupt() == 0) return 0;
 
-  /*I don't completely understand everything that's going on here.
-    This part is mainly a copy+paste from the CAEN Demo version of this 
-    function.*/
-
-  int i;
+  /* Initialize array values */
   for (i = 0; i < 4; i++)
   {
     MAXVER[i] = 0;
@@ -296,7 +291,7 @@ int vernier(unsigned int MAXVER[4], unsigned int MINVER[4])
 
   for (i = 0; i < 1000; i++)
   {
-    read_from_vme(V1729_RAM_DATA_VME); //Read from VME RAM
+    read_from_vme(V1729_RAM_DATA_VME); 
     if( (vme_data>>16) < MINVER[3] ) MINVER[3] = (vme_data>>16);
     if( (vme_data>>16) > MAXVER[3] ) MAXVER[3] = (vme_data>>16);
     if( (vme_data&0xffff) < MINVER[2] ) MINVER[2] = (vme_data&0xffff);
@@ -305,7 +300,7 @@ int vernier(unsigned int MAXVER[4], unsigned int MINVER[4])
 
   for (i = 0; i < 1000; i++)
   {
-    read_from_vme(V1729_RAM_DATA_VME); //Read from VME RAM
+    read_from_vme(V1729_RAM_DATA_VME); 
     if( (vme_data>>16) < MINVER[1] ) MINVER[1] = (vme_data>>16);
     if( (vme_data>>16) > MAXVER[1] ) MAXVER[1] = (vme_data>>16);
     if( (vme_data&0xffff) < MINVER[0] ) MINVER[0] = (vme_data&0xffff);
@@ -320,7 +315,6 @@ int vernier(unsigned int MAXVER[4], unsigned int MINVER[4])
     printf(" Resetting num. of columns failed with error: %d \n", ret);
     return 0;
   }  
-
   else printf(" Resetting number of columns successful\n");
 
   printf("    Resetting TRIGGER_TYPE to initial value...");
@@ -330,7 +324,6 @@ int vernier(unsigned int MAXVER[4], unsigned int MINVER[4])
     printf(" Resetting TRIGGER_TYPE failed with error: %d \n", ret);
     return 0;
   }  
-
   else printf(" Resetting TRIGGER_TYPE successful\n");
 
   printf("    Resetting CHANNEL_MASK to initial value...");
@@ -340,28 +333,27 @@ int vernier(unsigned int MAXVER[4], unsigned int MINVER[4])
     printf(" Resetting CHANNEL_MASK failed with error: %d \n", ret);
     return 0;
   }  
-
   else printf(" Resetting CHANNEL_MASK successful\n");
   
   return 1;
 }
 
 /*This functions gets the pedestals that will later be subtracted
-  during the acquisition. */
-
+  during the acquisition. This method was taken from CAEN's demo.
+  Technically it removes the variance in the readings of the ADC
+  with no signals attached, so that all channels are uniform. */
 int get_pedestals(int pedestals[V1729_RAM_DEPH], 
                   unsigned int buffer32[V1729_RAM_DEPH/2],
                   unsigned int buffer16[V1729_RAM_DEPH]) 
 {
 
-  int i,j,k; //dummy variables for counting
-  int ch; //Channels
-  float meanpedestal[4]; //Keeps track of mean pedestal values
-  int count; //Stores number of bytes transferred from RAM
-  uint32_t trig_type, ch_mask, old_cols; //stores values for resetting later
-  CVErrorCodes ret; //debugging help
+  int i,j,k; 
+  int ch; /*Channels*/
+  float meanpedestal[4]; /*Keeps track of mean pedestal values*/
+  uint32_t trig_type, ch_mask, old_cols; /*stores values for resetting later*/
+  CVErrorCodes ret; /*Stores error codes return by CAEN functions */
 
-  //Initialize array
+  /*Initialize array*/
   meanpedestal[0] = 0;
   meanpedestal[1] = 0;
   meanpedestal[2] = 0;
@@ -409,7 +401,6 @@ int get_pedestals(int pedestals[V1729_RAM_DEPH],
     printf(" Changing num. of columns failed with error: %d \n", ret);
     return 0;
   }  
-
   else printf(" Changing number of columns successful\n");
 
 
@@ -427,7 +418,6 @@ int get_pedestals(int pedestals[V1729_RAM_DEPH],
   /*Sets mask to allow 4 Channels */
   printf("    Setting mask to allow 4 Channels for finding pedestals..."); 
   ret = write_to_vme(V1729_CHANNEL_MASK, 15); 
-
   if (ret != cvSuccess)
   {
     printf(" Setting channel mask failed with error: %d \n", ret);
@@ -436,7 +426,6 @@ int get_pedestals(int pedestals[V1729_RAM_DEPH],
   else printf(" Set channel mask successfully\n");
 
   for (i = 0; i < 10252; i++) pedestals[i] = 0; /*Initialize pedestal array*/
-
    
   /*Doing 50 acquisition runs to get pedestals.*/
   printf("    Starting 50 acquisition sequences to find mean pedestals\n"); 
@@ -586,25 +575,21 @@ int save(unsigned short ch0[2560], unsigned short ch1[2560],
   CVErrorCodes ret;
 
   /* Finding number of columns to read */
-  /*printf("    Loading number of columns ..")*/;
   ret = read_from_vme(V1729_NB_OF_COLS_TO_READ);
   if (ret != cvSuccess)
   {
     printf(" Loading num. of columns failed with error: %d \n", ret);
     return 0;
   }  
-  /*else printf(" Load number of columns successful\n");*/
   num_cols = vme_data&0xff;
   
   /* Finding value of channel mask */
-  /*printf("    Finding value of CHANNEL_MASK..");*/
   ret = read_from_vme(V1729_CHANNEL_MASK);
   if (ret != cvSuccess)
   {
     printf(" Loading CHANNEL_MASK failed with error: %d \n", ret);
     return 0;
   }  
-  /*else printf(" Load CHANNEL_MASK successful\n");*/
   channel_mask = vme_data&0xf;
 
   /* Saving files based on your channel mask selection */
@@ -613,7 +598,9 @@ int save(unsigned short ch0[2560], unsigned short ch1[2560],
     ch[0] = fopen("Ch_0.dat", "a+b");
     for (i = 40; i < 2560; i++)
     {
-      sprintf(s, "%d\n", ch0[i]);
+      sprintf(s, "%d\n", ch0[i]-1000); /*Subtracting 1000 to remove extra 1000
+                                         added during masking phase to ensure that 
+                                         the entire signal is taken into consideration */
       fwrite(s, 1, strlen(s), ch[0]);
     }
    fclose(ch[0]);
@@ -624,7 +611,7 @@ int save(unsigned short ch0[2560], unsigned short ch1[2560],
     ch[1] = fopen("Ch_1.dat", "a+b");
     for (i = 40; i < 2560; i++)
     {
-      sprintf(s, "%d\n", ch1[i]);
+      sprintf(s, "%d\n", ch1[i]-1000);
       fwrite(s, 1, strlen(s), ch[1]);
     }
     fclose(ch[1]);
@@ -635,7 +622,7 @@ int save(unsigned short ch0[2560], unsigned short ch1[2560],
     ch[2] = fopen("Ch_2.dat", "a+b");
     for (i = 40; i < 2560; i++)
     {
-      sprintf(s, "%d\n", ch2[i]);
+      sprintf(s, "%d\n", ch2[i]-1000);
       fwrite(s, 1, strlen(s), ch[2]);
     }
     fclose(ch[2]);
@@ -646,7 +633,7 @@ int save(unsigned short ch0[2560], unsigned short ch1[2560],
     ch[3] = fopen("Ch_3.dat", "a+b");
     for (i = 40; i < 2560; i++)
     {
-      sprintf(s, "%d\n", ch3[i]);
+      sprintf(s, "%d\n", ch3[i]-1000);
       fwrite(s, 1, strlen(s), ch[3]);
     }
     fclose(ch[3]);

@@ -27,7 +27,7 @@ int main(int argc, void *argv[])
   CVErrorCodes ret; /* Stores Error Codes for Debugging */
 
   /* desired trigger treshhold = (2000/16^3)(trig_lev) - 1000 */
-  uint32_t trig_lev = 0x000; /* Corresponds to -1V Threshold */
+  uint32_t trig_lev = 0x6ff; /* Corresponds to -1V Threshold */
   uint32_t active_channel; /* active channels on the frontend of ADC */
   uint32_t num_columns; /* number of columns to read from MATACQ matrix */
   uint32_t post_trig; /* post trigger value */
@@ -136,7 +136,7 @@ int main(int argc, void *argv[])
  
   /* FP Frequency */
   printf("Attempting to change pilot frequency... ");
-  ret = write_to_vme(V1729_FP_FREQUENCY, 0x01);//2 GHz
+  ret = write_to_vme(V1729_FP_FREQUENCY, 0x01);/*2 GHz*/
   if (ret != cvSuccess)
   {
     printf(" failed with error: %d \n", ret);
@@ -238,7 +238,7 @@ int main(int argc, void *argv[])
 
   /* Discriminator Dead Time */
   printf("Setting value of discriminator deadtime on channels 0-7 ...");
-  ret = set_dead_time(1, 80);
+  ret = set_dead_time(1, 100);
 
   if (ret != cvSuccess)
   {
@@ -250,7 +250,7 @@ int main(int argc, void *argv[])
 
   /* Discriminator Pulse Width */
   printf("Setting value of discriminator pulse width on channels 0-7 ...");
-  ret = set_output_width(1, 80); /*62*/
+  ret = set_output_width(1, 195); /*51.02 ns*/
 
   if (ret != cvSuccess)
   {
@@ -359,6 +359,7 @@ CVIOSources Hit, CVIOSources Gate, CVIOSources Reset); Not Sure what GATE should
    Begin Actual Acquisition
    **************************************************/
 
+  CAENVME_ResetScalerCount(handle);
   while (interrupts < num_acquisitions)
   {
     /*Send start acquisition signal*/
@@ -371,11 +372,22 @@ CVIOSources Hit, CVIOSources Gate, CVIOSources Reset); Not Sure what GATE should
     }  
 
     /*Wait for Interrupt from V1729A*/
-    if ( wait_for_interrupt_vme() == 0 )
+    int error;
+    error = wait_for_interrupt();
+
+    if ( error == 0)
     {
       reset_vme();
       CAENVME_End(handle);
     }
+
+    if ( error == 2)
+    {
+      reset_vme();
+      continue;
+    } 
+
+
     interrupts++;
     if (interrupts == num_acquisitions)
     {

@@ -9,6 +9,7 @@ VME CRATE LAYOUT:
 -----------------
 
  1. VME controller , VX2718 
+   * Base Address: 0x00000000
    * Optical link.
 
  2. Waveform Digitizer , V1729A
