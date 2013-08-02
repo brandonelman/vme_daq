@@ -1,10 +1,31 @@
-vme_daq
+vme\_daq
 =======
 
 Attempting to create a DAQ Program for use with a VME System
 
+PREREQUISITES:
+--------------
 
+ 1. CAEN Libraries (note: just copy shared libs and includes)
+    because their install script sucks. 
+   * CAENVMElib  to compile code
+   * CAENComm for CAENUpgrader 
 
+ 2. CAENUpgrader for firmware upgrades.
+
+Installing drivers/firmware:
+----------------------------
+
+=== CAEN A2818 PCI CARD drivers ===
+
+ * Drivers were download from website
+ * after make had to run sudo a2818\_load in order to get the drivers to load
+ * TODO: add to system startup script 
+
+=== CAEN VX2718 VME Controller firmware upgrade ===
+
+ * TODO
+ 
 VME CRATE LAYOUT:
 -----------------
 

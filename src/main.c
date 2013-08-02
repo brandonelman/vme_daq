@@ -10,6 +10,11 @@
 #include <unistd.h>
 #include <sys/time.h>
 
+// LINUX needs defined for CAENVMElib
+#ifndef LINUX 
+#define LINUX 1
+#endif
+
 #include "V1729.h"
 #include "V812.h"
 #include "CAENVMElib.h"

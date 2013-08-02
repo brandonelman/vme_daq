@@ -1,8 +1,3 @@
-#include <stdio.h>
-#include <string.h>
-
-#include "CAENVMElib.h"
-#include "V1729.h" /* Handle is global */
 #include "V812.h" 
 
 CVErrorCodes write_to_v812(uint32_t vme_addr, uint32_t data)

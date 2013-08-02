@@ -1,3 +1,33 @@
+#ifndef V1729_HH
+#define V1729_HH 1
+
+#ifndef LINUX
+#define LINUX 1
+#endif
+
+#include <stdlib.h>
+#include <math.h>
+#include <stdio.h>
+#include <ctype.h>
+#include <stdint.h>
+#include <inttypes.h>
+#include <stdarg.h>
+#include <math.h>
+#include <string.h>
+
+
+#ifdef WIN32
+    #include <time.h>
+    #include <sys/timeb.h>
+    #include <conio.h>
+    #include <process.h>
+#else
+    #include <unistd.h>
+    #include <sys/time.h>
+    #define Sleep(t)  usleep((t)*1000)
+#endif
+
+#include "CAENVMElib.h"
 /* V1729.H : source code for V1729 module */
 /* created 14.10.2009 by Franco.LARI     */
 
@@ -70,4 +100,5 @@ int reorder(unsigned int trig_rec, unsigned int post_trig, uint32_t num_columns,
 
 int save(unsigned short ch0[2560], unsigned short ch1[2560], 
          unsigned short ch2[2560], unsigned short ch3[2560]);
+#endif
 

@@ -1,30 +1,5 @@
 /* V1729.C : source code for V1729 module 
    Last Updated: 7/28/2013 Brandon Elman */
-
-#define __LINUX__
-#include <stdlib.h>
-#include <math.h>
-#include <stdio.h>
-#include <ctype.h>
-#include <stdint.h>
-#include <inttypes.h>
-#include <stdarg.h>
-#include <math.h>
-#include <string.h>
-
-
-#ifdef WIN32
-    #include <time.h>
-    #include <sys/timeb.h>
-    #include <conio.h>
-    #include <process.h>
-#else
-    #include <unistd.h>
-    #include <sys/time.h>
-    #define Sleep(t)  usleep((t)*1000)
-#endif
-
-#include "CAENVMElib.h"
 #include "V1729.h"
 
 /* write_to_vme allows you to perform a single write cycle

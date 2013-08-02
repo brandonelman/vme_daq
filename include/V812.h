@@ -1,4 +1,10 @@
+#ifndef V812_HH
+#define V812_HH 1 
 
+#include <stdio.h>
+#include <string.h>
+#include "V1729.h" /* Handle is global */
+#include "CAENVMElib.h"
 
 /*Register Addresses */
 #define V812_THRESHOLD_CH0  0x00
@@ -30,7 +36,10 @@
 
 #define V812_BASE_ADDRESS 0xEE000000 
 
-#include "CAENVMElib.h"
+#ifndef LINUX
+#define LINUX
+#endif
+
 /***************************************************
                 Function Declarations
 ***************************************************/
@@ -49,4 +58,5 @@ CVErrorCodes set_dead_time(int ch_section, int set_count);
 CVErrorCodes set_majority_threshold(int maj_lev);
 CVErrorCodes send_test_pulse(void);
 
+#endif
 
