@@ -61,7 +61,9 @@ int mask_buffer(unsigned int buffer32[V1729_RAM_DEPH/2], unsigned int buffer16[V
   {
     buffer16[i+1] = mask&buffer32[i/2];
     buffer16[i] = mask&(buffer32[i/2]>>16);
+
   }
+
   return 1;
 }
 
@@ -142,6 +144,12 @@ CVErrorCodes read_vme_ram(unsigned int buffer32[V1729_RAM_DEPH/2])
     }
 
     buffer32[i] = vme_data; 
+    if (buffer32[i] > 2000000000) /*Protects from overflow acquisitions! 
+                                0xea60 = 60000*/
+    {
+      printf("Overflow: Buffer32[i] = %d", buffer32[i]);
+      return -3;
+    }   
   }
 
   return cvSuccess;
@@ -549,6 +557,7 @@ int save(unsigned short ch0[2560], unsigned short ch1[2560],
   int num_cols;
   CVErrorCodes ret;
 
+
   /* Finding number of columns to read */
   ret = read_from_vme(V1729_NB_OF_COLS_TO_READ);
   if (ret != cvSuccess)
@@ -567,10 +576,21 @@ int save(unsigned short ch0[2560], unsigned short ch1[2560],
   }  
   channel_mask = vme_data&0xf;
 
+  time_t t = time(NULL);
+  struct tm tm = *localtime(&t);
+  char filename0[100]; 
+  char filename1[100];
+  char filename2[100];
+  char filename3[100];
+
+  sprintf(filename0, "analysis/%d-%d-%d_Ch_0.dat", tm.tm_year+1900, tm.tm_mon+1, tm.tm_mday);
+  sprintf(filename1, "analysis/%d-%d-%d_Ch_1.dat", tm.tm_year+1900, tm.tm_mon+1, tm.tm_mday);
+  sprintf(filename2, "analysis/%d-%d-%d_Ch_2.dat", tm.tm_year+1900, tm.tm_mon+1, tm.tm_mday);
+  sprintf(filename3, "analysis/%d-%d-%d_Ch_3.dat", tm.tm_year+1900, tm.tm_mon+1, tm.tm_mday);
   /* Saving files based on your channel mask selection */
   if(channel_mask&0x1)
   {
-    ch[0] = fopen("Ch_0.dat", "a+b");
+    ch[0] = fopen(filename0, "a+b");
     for (i = 40; i < 2560; i++)
     {
       sprintf(s, "%d\n", ch0[i]-1000); /*Subtracting 1000 to remove extra 1000
@@ -583,7 +603,7 @@ int save(unsigned short ch0[2560], unsigned short ch1[2560],
   
   if(channel_mask&0x2)
   {
-    ch[1] = fopen("Ch_1.dat", "a+b");
+    ch[1] = fopen(filename1, "a+b");
     for (i = 40; i < 2560; i++)
     {
       sprintf(s, "%d\n", ch1[i]-1000);
@@ -594,7 +614,7 @@ int save(unsigned short ch0[2560], unsigned short ch1[2560],
 
   if(channel_mask&0x4)
   {
-    ch[2] = fopen("Ch_2.dat", "a+b");
+    ch[2] = fopen(filename2, "a+b");
     for (i = 40; i < 2560; i++)
     {
       sprintf(s, "%d\n", ch2[i]-1000);
@@ -605,7 +625,7 @@ int save(unsigned short ch0[2560], unsigned short ch1[2560],
 
   if(channel_mask&0x8)
   {
-    ch[3] = fopen("Ch_3.dat", "a+b");
+    ch[3] = fopen(filename3, "a+b");
     for (i = 40; i < 2560; i++)
     {
       sprintf(s, "%d\n", ch3[i]-1000);

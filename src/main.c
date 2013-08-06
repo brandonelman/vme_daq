@@ -32,13 +32,13 @@ int main(int argc, void *argv[])
   CVErrorCodes ret; /* Stores Error Codes for Debugging */
 
   /* desired trigger treshhold = (2000/16^3)(trig_lev) - 1000 */
-  uint32_t trig_lev = 0x6ff; /* Corresponds to -1V Threshold */
+  uint32_t trig_lev = 0x000; /* Corresponds to -1V Threshold */
   uint32_t active_channel; /* active channels on the frontend of ADC */
   uint32_t num_columns; /* number of columns to read from MATACQ matrix */
   uint32_t post_trig; /* post trigger value */
 
   int num_acquisitions = 500; /* Number of times to loop acquisition! */
-  unsigned short counts; /* Number of Counts from Scaler */
+  unsigned int counts; /* Number of Counts from Scaler */
   int mask;
   int ch;
   int buffer;
@@ -411,13 +411,19 @@ CVIOSources Hit, CVIOSources Gate, CVIOSources Reset); Not Sure what GATE should
 
     /*Read VME Ram*/
     ret = read_vme_ram(buffer32);
-    if (ret != cvSuccess)
+    if (ret != cvSuccess && ret != -3)
     {
       printf("Read_VME_Ram failed with error %d\n", ret);
       reset_vme();
       return 0;
     }  
 
+    else if (ret == -3)
+    {
+      printf("Warning! Overflow!");
+      interrupts--;
+      continue;
+    }
     /*Read TRIG_REC after VME RAM: Necessary for determining
       trigger position in window */
     ret = read_from_vme(V1729_TRIG_REC); 

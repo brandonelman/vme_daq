@@ -14,7 +14,7 @@
 #include <stdarg.h>
 #include <math.h>
 #include <string.h>
-
+#include <time.h>
 
 #ifdef WIN32
     #include <time.h>
