@@ -3,7 +3,7 @@
 CVErrorCodes write_to_v812(uint32_t vme_addr, uint32_t data)
 {
   CVDataWidth data_size = cvD16;
-  unsigned short addr_mode = cvA32_U_DATA;
+  CVAddressModifier addr_mode = cvA32_U_DATA;
   vme_addr = vme_addr + V812_BASE_ADDRESS;
   return CAENVME_WriteCycle(handle, vme_addr, &data, addr_mode, data_size);
 }  

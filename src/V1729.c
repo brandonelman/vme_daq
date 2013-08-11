@@ -62,6 +62,12 @@ int mask_buffer(unsigned int buffer32[V1729_RAM_DEPH/2], unsigned int buffer16[V
     buffer16[i+1] = mask&buffer32[i/2];
     buffer16[i] = mask&(buffer32[i/2]>>16);
 
+    if (buffer16[i] > 60000)
+    {
+      printf("Overflow! Restarting!");
+      return 2;
+    }
+
   }
 
   return 1;
@@ -144,7 +150,7 @@ CVErrorCodes read_vme_ram(unsigned int buffer32[V1729_RAM_DEPH/2])
     }
 
     buffer32[i] = vme_data; 
-    if (buffer32[i] > 2000000000) /*Protects from overflow acquisitions! 
+    if (buffer32[i] > 1900000000) /*Protects from overflow acquisitions! 
                                 0xea60 = 60000*/
     {
       printf("Overflow: Buffer32[i] = %d", buffer32[i]);
@@ -547,13 +553,13 @@ int reorder(unsigned int trig_rec, unsigned int post_trig, uint32_t num_columns,
 
 /* Saves data to files Ch#.dat */
 int save(unsigned short ch0[2560], unsigned short ch1[2560], 
-         unsigned short ch2[2560], unsigned short ch3[2560])
+         unsigned short ch2[2560], unsigned short ch3[2560],
+         int run_num)
 {
   FILE *ch[4];
   int channel_mask;
   int i;
   char s[30];
- 
   int num_cols;
   CVErrorCodes ret;
 
@@ -579,15 +585,16 @@ int save(unsigned short ch0[2560], unsigned short ch1[2560],
   time_t t = time(NULL);
   struct tm tm = *localtime(&t);
   char filename0[100]; 
-  char filename1[100];
+/*  char filename1[100];
   char filename2[100];
-  char filename3[100];
+  char filename3[100];*/
 
-  sprintf(filename0, "analysis/%d-%d-%d_Ch_0.dat", tm.tm_year+1900, tm.tm_mon+1, tm.tm_mday);
-  sprintf(filename1, "analysis/%d-%d-%d_Ch_1.dat", tm.tm_year+1900, tm.tm_mon+1, tm.tm_mday);
+  sprintf(filename0, "analysis/%d-%d-%d_Ch_0_%d.dat", tm.tm_year+1900, tm.tm_mon+1, tm.tm_mday, run_num);
+/*  sprintf(filename1, "analysis/%d-%d-%d_Ch_1.dat", tm.tm_year+1900, tm.tm_mon+1, tm.tm_mday);
   sprintf(filename2, "analysis/%d-%d-%d_Ch_2.dat", tm.tm_year+1900, tm.tm_mon+1, tm.tm_mday);
-  sprintf(filename3, "analysis/%d-%d-%d_Ch_3.dat", tm.tm_year+1900, tm.tm_mon+1, tm.tm_mday);
+  sprintf(filename3, "analysis/%d-%d-%d_Ch_3.dat", tm.tm_year+1900, tm.tm_mon+1, tm.tm_mday);*/
   /* Saving files based on your channel mask selection */
+
   if(channel_mask&0x1)
   {
     ch[0] = fopen(filename0, "a+b");
@@ -600,7 +607,7 @@ int save(unsigned short ch0[2560], unsigned short ch1[2560],
     }
    fclose(ch[0]);
   }
-  
+/* 
   if(channel_mask&0x2)
   {
     ch[1] = fopen(filename1, "a+b");
@@ -633,6 +640,6 @@ int save(unsigned short ch0[2560], unsigned short ch1[2560],
     }
     fclose(ch[3]);
   }
-  
+*/ 
   return 1;
 }
