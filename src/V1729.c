@@ -7,7 +7,7 @@
 CVErrorCodes write_to_vme(uint32_t vme_addr, uint32_t data_to_write) 
 {
   CVDataWidth data_size = cvD32;
-  unsigned short addr_mode = cvA32_U_DATA;
+  CVAddressModifier  addr_mode = cvA32_U_DATA;
   vme_addr = CAENBASEADDRESS + vme_addr;
   return CAENVME_WriteCycle(handle, vme_addr, &data_to_write, addr_mode, data_size); 
 }
@@ -18,7 +18,7 @@ CVErrorCodes write_to_vme(uint32_t vme_addr, uint32_t data_to_write)
 CVErrorCodes read_from_vme(uint32_t vme_addr)                  
 {
   CVDataWidth data_size = cvD32;
-  unsigned short addr_mode = cvA32_U_DATA;
+  CVAddressModifier addr_mode = cvA32_U_DATA;
   vme_addr = CAENBASEADDRESS + vme_addr;
   return CAENVME_ReadCycle(handle, vme_addr, &vme_data, addr_mode, data_size);
 }
@@ -154,7 +154,7 @@ CVErrorCodes read_vme_ram(unsigned int buffer32[V1729_RAM_DEPH/2])
                                 0xea60 = 60000*/
     {
       printf("Overflow: Buffer32[i] = %d", buffer32[i]);
-      return -3;
+      return cvGenericError;
     }   
   }
 
@@ -333,20 +333,21 @@ int vernier(unsigned int MAXVER[4], unsigned int MINVER[4])
   with no signals attached, so that all channels are uniform. */
 int get_pedestals(int pedestals[V1729_RAM_DEPH], 
                   unsigned int buffer32[V1729_RAM_DEPH/2],
-                  unsigned int buffer16[V1729_RAM_DEPH]) 
+                  unsigned int buffer16[V1729_RAM_DEPH],
+                  float mean_pedestal[4]) 
+
 {
 
   int i,j,k; 
   int ch; /*Channels*/
-  float meanpedestal[4]; /*Keeps track of mean pedestal values*/
   uint32_t trig_type, ch_mask, old_cols; /*stores values for resetting later*/
   CVErrorCodes ret; /*Stores error codes return by CAEN functions */
 
   /*Initialize array*/
-  meanpedestal[0] = 0;
-  meanpedestal[1] = 0;
-  meanpedestal[2] = 0;
-  meanpedestal[3] = 0;
+  mean_pedestal[0] = 0;
+  mean_pedestal[1] = 0;
+  mean_pedestal[2] = 0;
+  mean_pedestal[3] = 0;
 
   /* Saving value of TRIGGER_TYPE register for resetting later */
   printf("    Saving value of TRIGGER_TYPE for resetting later..");
@@ -473,14 +474,14 @@ int get_pedestals(int pedestals[V1729_RAM_DEPH],
     for (ch = 0; ch < 4; ch++)
     {
       pedestals[j*4 + ch] = pedestals[j*4 + ch] / (50);
-      meanpedestal[ch] = meanpedestal[ch] + (float)pedestals[j*4 + ch]; 
+      mean_pedestal[ch] = mean_pedestal[ch] + (float)pedestals[j*4 + ch]; 
     }
 
-  for (ch = 0; ch < 4; ch++) meanpedestal[ch] = meanpedestal[ch]/2560;
+  for (ch = 0; ch < 4; ch++) mean_pedestal[ch] = mean_pedestal[ch]/2560;
 
   for (k = 0; k < 2560; k++)
     for (ch = 0; ch < 4; ch++)
-      pedestals[k*4 + ch] = pedestals[k*4 + ch] - (int)meanpedestal[ch]; 
+      pedestals[k*4 + ch] = pedestals[k*4 + ch] - (int)mean_pedestal[ch]; 
 
   /*Resetting NB_OF_COLS_TO_READ, CHANNEL_MASK, TRIGGER_TYPE */
   printf("    Resetting columns to read to initial value...");

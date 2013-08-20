@@ -70,8 +70,8 @@
 GLOBAL VARIABLES
 ************************************/
 
-int32_t handle; 
-uint32_t vme_data; /*Made global so I can read into it easier than passing
+extern int32_t handle; 
+extern uint32_t vme_data; /*Made global so I can read into it easier than passing
                      multiple pointers around. There is Probably a better 
                      way to do this.*/     
 
@@ -89,7 +89,7 @@ int wait_for_interrupt_vme(void);
 int vernier(unsigned int MAXVER[4], unsigned int MINVER[4]);
 
 int get_pedestals(int pedestals[V1729_RAM_DEPH], unsigned int buffer32[V1729_RAM_DEPH/2], 
-                  unsigned int buffer16[V1729_RAM_DEPH]);
+                  unsigned int buffer16[V1729_RAM_DEPH], float mean_pedestal[4]);
 
 int mask_buffer(unsigned int buffer32[V1729_RAM_DEPH/2], unsigned int buffer16[V1729_RAM_DEPH]);
 

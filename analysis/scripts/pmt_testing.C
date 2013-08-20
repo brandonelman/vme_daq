@@ -1,4 +1,3 @@
-
 //Necessary Steps:    
 // 1. Loading and preparation of data
 //   * Load in *Ch_0.dat file which contains values read from the ADC. 
@@ -20,8 +19,8 @@ void pmt_testing(char* input_file) {
 
   //Parameters
   Int_t nbins = 40;
-  Double_t min = 200000; //hist min/max values
-  Double_t max = 300000; //Must be better way to get these!
+  Double_t min = 550000; //hist min/max values
+  Double_t max = 600000; //Must be better way to get these!
 
   //Initialized variables
   Int_t num_data_points = 0;
@@ -59,7 +58,7 @@ void pmt_testing(char* input_file) {
   }
   in.close();
 
-  TH1F * spectrum = new TH1F("spectrum", "ADC Spectrum; Channels; Counts", nbins, min, max); 
+  TH1F * spectrum = new TH1F("spectrum", "ADC Spectrum; Accumulated Channels; Counts", nbins, min, max); 
   //spectrum->SetBit(TH1::kCanRebin);
   spectrum->Sumw2(); 
   for(Int_t i = 0; i < t1->GetEntries(); i++) {
