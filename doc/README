@@ -1,0 +1,61 @@
+#PREPARE FOR TESTING
+#===================
+# Load Drivers 
+cd /home/brandon/coding/A2818Drv/
+sudo ./a2818_load
+
+# Prepare Root
+cd /usr/local
+source bin/thisroot.sh
+
+#PREPARING ADC SPECTRUM
+#======================
+#SETUP: Anode Current -> Ch 0 on V1729A
+#       Pulser -> EXT TRIG on V1729A
+# !!!SIGNALS MUST NOT BE ON BOARD BEFORE THE PROGRAM SAYS TO ATTACH THEM!!!
+# WD: /home/brandon/coding/vme_daq
+# Run program
+cd /home/brandon/coding/vme_daq/
+./bin/adc_spectrum
+
+# After a run finishes, the ADC spectrum will be displayed and saved to a *.root file. 
+# At the end of a run, you have the option of starting another based on the parameter 
+# "num_quadrants". 
+
+# Simply change "num_quadrants" in the file "src/main.c" to determine 
+# how many times you want to loop num_acquisitions, usually to test different voltages 
+# or sections of the PMT Face. "num_acquisitions" just collects more pulses for
+# statistics.
+
+# Click enter when the PMT is in the next position or next voltage is set.
+# Each run will be saved as "analysis/adc_spectrum_QUAD.root" where QUAD is the 
+# number of the current quadrant.  
+
+#PLATEAU TESTING
+#===============
+#SETUP: Anode Current -> Ch 0 on V812 
+#       "OR" on V812 -> Ch 0 INPUT on VX2718  
+#
+# WD: /home/brandon/coding/counting/
+#
+# Observe Anode current on Oscilloscope to determine a proper discriminator threshold.
+# Can change threshold, output pulse width of discriminator, and the dead time of the
+# discriminator in file "src/counting.C". Other parameters one can change are the
+# style settings for ROOT, the num_voltages being tested, and the "num_repeats" for
+# statistics. If anything is changed just do "make" in /home/brandon/coding/counting 
+#
+# Data is saved to "plateau.root"
+
+cd /home/brandon/coding/counting
+./bin/counting.exe
+
+# Press enter after adjusting the voltage level. I arbitrarily say 100V but we can 
+# decide to change that. The plot might not appear originally, but just keep going
+# and open the file "plateau.root" when you're done
+
+# To open "plateau.root":
+
+root -l analysis/plateau.root
+TBrowser x;
+
+#Then click on "plateau.root"

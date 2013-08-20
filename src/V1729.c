@@ -601,7 +601,7 @@ int save(unsigned short ch0[2560], unsigned short ch1[2560],
     ch[0] = fopen(filename0, "a+b");
     for (i = 40; i < 2560; i++)
     {
-      sprintf(s, "%d\n", ch0[i]-1000); /*Subtracting 1000 to remove extra 1000
+      sprintf(s, "%d\n", ch0[i]); /*Subtracting 1000 to remove extra 1000
                                          added during masking phase to ensure that 
                                          the entire signal is taken into consideration */
       fwrite(s, 1, strlen(s), ch[0]);
@@ -614,7 +614,7 @@ int save(unsigned short ch0[2560], unsigned short ch1[2560],
     ch[1] = fopen(filename1, "a+b");
     for (i = 40; i < 2560; i++)
     {
-      sprintf(s, "%d\n", ch1[i]-1000);
+      sprintf(s, "%d\n", ch1[i]);
       fwrite(s, 1, strlen(s), ch[1]);
     }
     fclose(ch[1]);
@@ -625,7 +625,7 @@ int save(unsigned short ch0[2560], unsigned short ch1[2560],
     ch[2] = fopen(filename2, "a+b");
     for (i = 40; i < 2560; i++)
     {
-      sprintf(s, "%d\n", ch2[i]-1000);
+      sprintf(s, "%d\n", ch2[i]);
       fwrite(s, 1, strlen(s), ch[2]);
     }
     fclose(ch[2]);
@@ -636,7 +636,7 @@ int save(unsigned short ch0[2560], unsigned short ch1[2560],
     ch[3] = fopen(filename3, "a+b");
     for (i = 40; i < 2560; i++)
     {
-      sprintf(s, "%d\n", ch3[i]-1000);
+      sprintf(s, "%d\n", ch3[i]);
       fwrite(s, 1, strlen(s), ch[3]);
     }
     fclose(ch[3]);
