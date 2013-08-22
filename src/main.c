@@ -27,6 +27,9 @@
 #include "TStyle.h"
 
 void subtract_pedestals(unsigned int buffer16[V1729_RAM_DEPH], int pedestals[V1729_RAM_DEPH]) {
+  //Subtracts the value in "pedestals" from buffer16. In actuality pedestals
+  //is an array containing the variance of the pedestals. 
+ 
   int i;
   int buffer;
   int ch;
@@ -145,16 +148,16 @@ int adc_spectrum() {
   // (x+1000)*((16^3)/2000) = trig_lev
   uint32_t trig_lev = 0x8ff; // -250 mV Threshold
   int num_acquisitions = 100; // Number of times to loop acquisition
-  int num_quadrants = 5; // Number of times to repeat num_acquisitions
+  int num_quadrants = 40;  // Number of times to repeat num_acquisitions
   
   uint32_t active_channel; // active number of channels (0b1111 means all 4 channels)
   uint32_t num_columns; // number of columns to read from MATACQ matrix
   uint32_t post_trig;  // Post trigger value
   unsigned int trig_rec;//Helps determine the trigger's position in the acquisition window
   int mask;
+  
   //Looping variables
   int cur_quadrant;
- 
   int ch;
   int i; 
   int interrupts = 0;
@@ -248,6 +251,8 @@ int adc_spectrum() {
     return 0;
   }
 
+  printf("Mean pedestal for Ch. 0: %f", mean_pedestal[0]);
+
   // Pedestals mus tbe calculated before attaching a signal for best results 
   printf("Please now attach your signal to the board. Press RETURN when read.\n");
   key = getchar();
@@ -257,10 +262,8 @@ int adc_spectrum() {
     TTree t1("t1", "ADC Data");
     t1.Branch("pulse", &pulse, "pulse/I");
     t1.Branch("channel", &channel, "channel/I");
-    //TTree *t1 = new TTree("t1", "ADC Data");
-    //t1->Branch("pulse", &pulse, "pulse/I");
-    //t1->Branch("channel", &channel, "channel/I");
     while (interrupts <= num_acquisitions) {
+
       //Start Acquisition
       ret = start_acq();
       if (ret != cvSuccess) {
@@ -272,11 +275,6 @@ int adc_spectrum() {
         return 0; //Timeout Error
       }
   
-      //if (value == 2) {
-      //  printf("Overflow!\n");
-      //  reset_vme();
-      //  continue;
-      //}
 
       interrupts++;
       
@@ -293,18 +291,6 @@ int adc_spectrum() {
         printf("Reading VME RAM failed with error %d\n", ret);
         return 0;
       }
-      //if (ret != cvSuccess && ret != cvGenericError) {
-      //  printf("Reading VME RAM failed with error %d\n", ret);
-      //  return ret;
-      //}
-
-
-     // else if (ret == cvGenericError) {
-     //   printf("Warning! Overflow!");
-     //   interrupts--;
-        
-    //    continue;
-    //  }
 
       ret = read_from_vme(V1729_TRIG_REC);
       if (ret != cvSuccess) {
@@ -319,12 +305,6 @@ int adc_spectrum() {
         return 0;
       }
 
-      //else if (value == 2) {
-      //  printf("Overflow occurred!");
-      //  interrupts--;
-      //  continue;
-      //}
-
       //subtract pedestals
       subtract_pedestals(buffer16, pedestals); 
 
@@ -338,7 +318,6 @@ int adc_spectrum() {
       for (i = 40; i < 2560; i++) {
         channel = ch0[i];
         t1.Fill();
-        //t1->Fill();
       }
     }
 
@@ -346,16 +325,19 @@ int adc_spectrum() {
     int size_of_array = t1.GetEntries()/2520; 
     int total_channels_arr[size_of_array];
     int total_channels;
+    
+    //Initialized Min/Max. Actual values found later.
     int min = 99999999;
     int max = 0;
+    
+    //Canvas Height/Width
     Double_t width = 1000;
     Double_t height = 1000;
+
     //Parameters
     Int_t nbins = 20;
 
     for (i = 0; i < t1.GetEntries(); i++) {
-      //printf("t1.GetEntries: %ld", t1.GetEntries());
-      //printf("Current iteration for channel finding = %d\n", i);
       t1.GetEntry(i);
       if (i % 2520 == 0 && i != 0) {
         printf("total_channels = %d\n", total_channels);
@@ -368,8 +350,7 @@ int adc_spectrum() {
           total_channels_arr[i/2520] = total_channels;
         total_channels = 0;
       } 
-      //printf("Mean_pedestal[0] = %f\n", mean_pedestal[0]);
-      //printf("channel = %d\n", channel);
+
       total_channels += TMath::Abs(channel-mean_pedestal[0]);
     }
 
@@ -380,13 +361,6 @@ int adc_spectrum() {
 
       max = 1.15*min;
       min *= .85; 
-      //if (total_channels_arr[i] > max && total_channels_arr[i] != -1) {
-      //  if (i >= 1 && total_channels_arr[i] > 100*total_channels_arr[i-1]) 
-      //    continue;
-      //  else 
-      //    max = total_channels_arr[i];
-      //}
-    
 
     printf("Min: %d\n", min);
     printf("Max: %d\n", max);
@@ -400,7 +374,7 @@ int adc_spectrum() {
     gStyle->SetStatBorderSize(0);
     gStyle->SetOptTitle(0);
 
-   //Create Canvas
+    //Create Canvas
     TCanvas * canvas = new TCanvas("canvas", "PMT Testing", 0, 0, width, height);
     canvas->SetWindowSize(width + (width-canvas->GetWw()),
                           height + (height-canvas->GetWh()));
@@ -414,10 +388,10 @@ int adc_spectrum() {
 
     for (i = 0; i < size_of_array; i++) {
       if (total_channels_arr[i] != -1) { 
-          if (i >= 1 && total_channels_arr[i] > 100 * total_channels_arr[i-1]) 
-            continue;
-          else 
-            spectrum->Fill(total_channels_arr[i]);
+        if (i >= 1 && total_channels_arr[i] > 100 * total_channels_arr[i-1]) 
+          continue;
+        else 
+          spectrum->Fill(total_channels_arr[i]);
       }
     }
     spectrum->SetLineWidth(2);
@@ -426,11 +400,9 @@ int adc_spectrum() {
     spectrum->SetLineColor(kRed);
 
     spectrum->Fit("gaus");
-    //spectrum->GetFunction("gaus")->SetLineColor(kRed);
     canvas->cd(1);
     spectrum->Draw("EPSame");
 
-//    file = t1.GetCurrentFile();
     t1.Write();
     spectrum->Write();
 
