@@ -27,6 +27,10 @@ cd /home/brandon/coding/vme_daq/
 # or sections of the PMT Face. "num_acquisitions" just collects more pulses for
 # statistics.
 
+# Another important parameter is "trig_lev" in "src/main.c" which is a linear function of   
+# the external trigger threshold (given in the src file) ranging from 0x0 (-1 V) to 0xFFFF(1V). 
+# It must be set in hex. The program triggers on rising edge.  
+
 # Click enter when the PMT is in the next position or next voltage is set.
 # Each run will be saved as "analysis/adc_spectrum_QUAD.root" where QUAD is the 
 # number of the current quadrant.  
@@ -44,13 +48,21 @@ cd /home/brandon/coding/vme_daq/
 # style settings for ROOT, the num_voltages being tested, and the "num_repeats" for
 # statistics. If anything is changed just do "make" in /home/brandon/coding/counting 
 #
+# You must ensure the LED isn't over-powered. If you see results that show counts as high 
+# as 1023 for low voltages then the LED is too strong and needs its amplitude lowered. You 
+# can somewhat eyeball this by looking at the LED on the "OR" from the Discriminator. 
+#
+# The scaler only has the capability to read up to 1023 counts. 
+#
 # Data is saved to "plateau.root"
 
 cd /home/brandon/coding/counting
 ./bin/counting.exe
 
 # Press enter after adjusting the voltage level. I arbitrarily say 100V but we can 
-# decide to change that. The plot might not appear originally, but just keep going
+# decide to change that. 
+#
+# The plot might not appear originally, but just keep going
 # and open the file "plateau.root" when you're done
 
 # To open "plateau.root":
