@@ -547,6 +547,10 @@ int reorder(unsigned int trig_rec, unsigned int post_trig, uint32_t num_columns,
     ch2[i] = buffer16[4*j+13]; 
     ch1[i] = buffer16[4*j+14];
     ch0[i] = buffer16[4*j+15]; 
+
+    if (ch0[i] == 65535) {
+      return 2;
+    }/* Catch Overflow */ 
   }
 
   return 1;

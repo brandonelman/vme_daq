@@ -3,7 +3,8 @@
 # Load Drivers 
 cd /home/brandon/coding/A2818Drv/
 sudo ./a2818_load
-
+Password: Sean1992
+ls
 # Prepare Root
 cd /usr/local
 source bin/thisroot.sh
@@ -14,23 +15,21 @@ source bin/thisroot.sh
 #       Pulser -> EXT TRIG on V1729A
 # !!!SIGNALS MUST NOT BE ON BOARD BEFORE THE PROGRAM SAYS TO ATTACH THEM!!!
 # WD: /home/brandon/coding/vme_daq
-# Run program
-cd /home/brandon/coding/vme_daq/
-./bin/adc_spectrum
 
-# After a run finishes, the ADC spectrum will be displayed and saved to a *.root file. 
-# At the end of a run, you have the option of starting another based on the parameter 
-# "num_quadrants". 
 
-# Simply change "num_quadrants" in the file "src/main.c" to determine 
-# how many times you want to loop num_acquisitions, usually to test different voltages 
-# or sections of the PMT Face. "num_acquisitions" just collects more pulses for
-# statistics.
+# You have the option of starting another acquisition based on the parameter "num_quadrants".
+# To do this, change "num_quadrants" in the file "src/main.c" to
+# how many times you want to loop num_acquisitions ----------------------------------------------set to 40
+Note: "num_acquisitions" can be used to acquire different amounts of data.
 
 # Another important parameter is "trig_lev" in "src/main.c" which is a linear function of   
 # the external trigger threshold (given in the src file) ranging from 0x0 (-1 V) to 0xFFFF(1V). 
-# It must be set in hex. The program triggers on rising edge.  
+# It must be set in hex. The program triggers on rising edge.
 
+# To Run program
+cd /home/brandon/coding/vme_daq/
+./bin/adc_spectrum
+# When a run finishes, the ADC spectrum will be displayed and saved to a *.root file. 
 # Click enter when the PMT is in the next position or next voltage is set.
 # Each run will be saved as "analysis/adc_spectrum_QUAD.root" where QUAD is the 
 # number of the current quadrant.  
@@ -56,18 +55,13 @@ cd /home/brandon/coding/vme_daq/
 #
 # Data is saved to "plateau.root"
 
+# To Run program
 cd /home/brandon/coding/counting
 ./bin/counting.exe
 
+ Data is saved to "plateau.root"
+
 # Press enter after adjusting the voltage level. I arbitrarily say 100V but we can 
 # decide to change that. 
-#
-# The plot might not appear originally, but just keep going
-# and open the file "plateau.root" when you're done
 
-# To open "plateau.root":
 
-root -l analysis/plateau.root
-TBrowser x;
-
-#Then click on "plateau.root"

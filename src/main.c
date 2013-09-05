@@ -1,3 +1,7 @@
+#define NBINS 1000
+#define LOWER_LIM_X 0
+#define UPPER_LIM_X 16000
+
 #include <math.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -9,7 +13,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <sys/time.h>
-
+#include <iostream>
 #ifndef LINUX
 #define LINUX 1
 #endif
@@ -26,6 +30,7 @@
 #include "TROOT.h"
 #include "TStyle.h"
 
+using namespace std;
 void subtract_pedestals(unsigned int buffer16[V1729_RAM_DEPH], int pedestals[V1729_RAM_DEPH]) {
   //Subtracts the value in "pedestals" from buffer16. In actuality pedestals
   //is an array containing the variance of the pedestals. 
@@ -107,6 +112,7 @@ CVErrorCodes set_parameters (uint32_t trig_lev) {
 
   // Post-Trigger
   ret = write_to_vme(V1729_POSTTRIG_LSB, 0x40); 
+  //ret = write_to_vme(V1729_POSTTRIG_LSB, 0x1e); 
   if (ret != cvSuccess) {
     printf("Setting POSTTRIG_LSB failed with error %d \n", ret);
     return ret;
@@ -119,12 +125,19 @@ CVErrorCodes set_parameters (uint32_t trig_lev) {
   }
 
   // Trigger Type
-  ret = write_to_vme(V1729_TRIGGER_TYPE, 0x2); // Trigger on EXT TRIG Input Rising Edge
+  ret = write_to_vme(V1729_TRIGGER_TYPE, 0x1); // Trigger on Pulse based on TRIG_LEV
+  //ret = write_to_vme(V1729_TRIGGER_TYPE, 0x2); // Trigger on EXT TRIG Input Rising Edge
+  //ret = write_to_vme(V1729_TRIGGER_TYPE, 0x6); // Trigger on EXT TRIG Input Rising Edge
   if (ret != cvSuccess) {
     printf("Setting TRIGGER_TYPE failed with error %d \n", ret);
     return ret;
   }
 
+//ret = set_channel_threshold(0, 50);
+//if (ret != cvSuccess) {
+//  printf("Setting TRIGGER_TYPE failed with error %d \n", ret);
+// return ret;
+//}
   return ret;
 }
 
@@ -146,9 +159,9 @@ int adc_spectrum() {
   //Parameters
   // Let x be the desired triggering threshold value. 
   // (x+1000)*((16^3)/2000) = trig_lev
-  uint32_t trig_lev = 0x8ff; // -250 mV Threshold
-  int num_acquisitions = 100; // Number of times to loop acquisition
-  int num_quadrants = 40;  // Number of times to repeat num_acquisitions
+  uint32_t trig_lev = 0x3ff; // -250 mV Threshold
+  int num_acquisitions = 1000; // Number of times to loop acquisition
+  int num_quadrants = 1;  // Number of times to repeat num_acquisitions
   
   uint32_t active_channel; // active number of channels (0b1111 means all 4 channels)
   uint32_t num_columns; // number of columns to read from MATACQ matrix
@@ -181,6 +194,22 @@ int adc_spectrum() {
                                      // MINVER -> Zero of the vernier
   char key; //Used to pause after pedestal correction to attach signal to board
 
+  //TFile *dark_file = new TFile("analysis/dark_run.root", "read"); 
+  //TTree *dark_tree = (TTree*)dark_file->Get("t1");
+  //TH1F *dark = new TH1F("dark","",NBINS,LOWER_LIM_X,UPPER_LIM_X);
+  
+  //Add Manually
+  //dark_tree->Draw("channel>>dark");
+
+  //dark_file->Close();
+  
+  //  t1->Draw("channel>>spectrum(1000,0,9000)");
+  //dark_file->ls();
+  //TH1F *dark = NULL;
+  //dark_file->GetObject("htemp",dark);
+
+  //TH1F * dark = (TH1F*)dark_file->Get("htemp");
+
   //Create handle for interacting with VME Board
   ret = CAENVME_Init(vme_board, 0, 0, &handle);
   if (ret  != cvSuccess) {
@@ -196,8 +225,7 @@ int adc_spectrum() {
   }
 
   // Set Parameters
-  ret = set_parameters(trig_lev);
-  if (ret != cvSuccess) {
+  ret = set_parameters(trig_lev); if (ret != cvSuccess) {
     printf("Setting run paramaters failed with error %d \n", ret);
     CAENVME_End(handle);
     return 0;
@@ -251,17 +279,37 @@ int adc_spectrum() {
     return 0;
   }
 
-  printf("Mean pedestal for Ch. 0: %f", mean_pedestal[0]);
+  printf("Mean pedestal for Ch. 0: %f\n", mean_pedestal[0]);
 
   // Pedestals mus tbe calculated before attaching a signal for best results 
   printf("Please now attach your signal to the board. Press RETURN when read.\n");
   key = getchar();
+  
+  //Style Settings
+  gROOT->SetStyle("Plain");
+  gStyle->SetPalette(53);
+  gStyle->SetOptStat(000000);
+  gStyle->SetOptFit(1111);
+  gStyle->SetStatBorderSize(0);
+  gStyle->SetOptTitle(0);
+
+  //Canvas Height/Width
+  Double_t width = 1000;
+  Double_t height = 1000;
+
+  //Create Canvas
+  TCanvas * canvas = new TCanvas("canvas", "PMT Testing", 0, 0, width, height);
+  canvas->SetWindowSize(width + (width-canvas->GetWw()),
+                        height + (height-canvas->GetWh()));
+  canvas->Divide(1,1);
+
 
   for (cur_quadrant = 0; cur_quadrant < num_quadrants; cur_quadrant++) {
     //TTree for storing data in a root file
-    TTree t1("t1", "ADC Data");
-    t1.Branch("pulse", &pulse, "pulse/I");
-    t1.Branch("channel", &channel, "channel/I");
+    TTree *t1 = new TTree("t1", "ADC Data");
+    t1->Branch("pulse", &pulse, "pulse/I"); 
+    t1->Branch("channel", &channel, "channel/I");
+
     while (interrupts <= num_acquisitions) {
 
       //Start Acquisition
@@ -270,12 +318,12 @@ int adc_spectrum() {
         printf("Start Acquisition failed with error %d\n", ret);
         return 0;
       }
+
       value = wait_for_interrupt();
       if (value == 0) {
         return 0; //Timeout Error
       }
   
-
       interrupts++;
       
       //After receiving interrupt must acknowledge by writing 0 in interrupt register
@@ -309,110 +357,55 @@ int adc_spectrum() {
       subtract_pedestals(buffer16, pedestals); 
 
       //Reorder Data
-      reorder(trig_rec, post_trig, num_columns, MINVER, MAXVER, 
+      value = reorder(trig_rec, post_trig, num_columns, MINVER, MAXVER, 
               buffer16, ch0, ch1, ch2, ch3);
       
+      if (value == 2) { 
+        printf("Overflow detected!");
+        interrupts--;
+        continue;
+      }
+
       //Save to ASCII File
       //save(ch0, ch1, ch2, ch3, cur_position);
+
       pulse = interrupts - 1;  
       for (i = 40; i < 2560; i++) {
         channel = ch0[i];
-        t1.Fill();
+        printf("Ch0[i] = %d\n", ch0[i]);
+        t1->Fill();
       }
     }
 
     //PLOTTING
-    int size_of_array = t1.GetEntries()/2520; 
-    int total_channels_arr[size_of_array];
-    int total_channels;
+    int size_of_array = t1->GetEntries()/2520; 
     
     //Initialized Min/Max. Actual values found later.
     int min = 99999999;
     int max = 0;
     
-    //Canvas Height/Width
-    Double_t width = 1000;
-    Double_t height = 1000;
-
-    //Parameters
-    Int_t nbins = 20;
-
-    for (i = 0; i < t1.GetEntries(); i++) {
-      t1.GetEntry(i);
-      if (i % 2520 == 0 && i != 0) {
-        printf("total_channels = %d\n", total_channels);
-
-        if  (total_channels > 20000000) {
-          printf("Overflow!\n");
-          total_channels_arr[i/2520] = -1;
-        }
-        else 
-          total_channels_arr[i/2520] = total_channels;
-        total_channels = 0;
-      } 
-
-      total_channels += TMath::Abs(channel-mean_pedestal[0]);
-    }
-
-    for (i = 0; i < size_of_array; i++) {
-      if (total_channels_arr[i] < min && total_channels_arr[i] != -1 && total_channels_arr[i] != 0)
-        min = total_channels_arr[i];
-    }
-
-      max = 1.15*min;
-      min *= .85; 
-
-    printf("Min: %d\n", min);
-    printf("Max: %d\n", max);
-    
-     //Style Settings
-    
-    gROOT->SetStyle("Plain");
-    gStyle->SetPalette(53);
-    gStyle->SetOptStat(000000);
-    gStyle->SetOptFit(1111);
-    gStyle->SetStatBorderSize(0);
-    gStyle->SetOptTitle(0);
-
-    //Create Canvas
-    TCanvas * canvas = new TCanvas("canvas", "PMT Testing", 0, 0, width, height);
-    canvas->SetWindowSize(width + (width-canvas->GetWw()),
-                          height + (height-canvas->GetWh()));
-    canvas->Divide(1,1);
-
     sprintf(fn, "analysis/adc_spectrum_%d.root", cur_quadrant);
     TFile *file = new TFile(fn, "recreate");
+    t1->Write(); //Write To File
 
-    TH1F * spectrum = new TH1F("spectrum", "ADC Spectrum; Total Channels; Counts", nbins, min, max);
-    spectrum->Sumw2();
-
-    for (i = 0; i < size_of_array; i++) {
-      if (total_channels_arr[i] != -1) { 
-        if (i >= 1 && total_channels_arr[i] > 100 * total_channels_arr[i-1]) 
-          continue;
-        else 
-          spectrum->Fill(total_channels_arr[i]);
-      }
-    }
-    spectrum->SetLineWidth(2);
-    spectrum->SetMarkerStyle(21);
-    spectrum->SetMarkerColor(4);
-    spectrum->SetLineColor(kRed);
-
-    spectrum->Fit("gaus");
     canvas->cd(1);
-    spectrum->Draw("EPSame");
+    gPad->SetLogy();
+    TH1F *spectrum = new TH1F("spectrum","",NBINS,LOWER_LIM_X,UPPER_LIM_X);
+    //t1->Draw("channel>>spectrum(1000,0,9000)");
+    t1->Draw("channel>>spectrum");
+    //spectrum->Add(dark, -1); 
+    //cout << spectrum->GetNbinsX();
+    //cout << dark->GetNbinsX();
+    spectrum->Draw("Same");
 
-    t1.Write();
-    spectrum->Write();
-
-  
-    printf("Change testing quadrant. Press enter when ready for another acquisition.\n");
-    canvas->Update();
-    key = getchar();
+    canvas->Update(); //Draw on Canvas
     file->Close();
+    delete(t1);
+    printf("Change testing quadrant. Press enter when ready for another acquisition.\n");
+  
+    key = getchar();
+    interrupts = 0;
     canvas->Clear();
-    canvas->Close();
   }
 
   printf("Closing board post-acquisition...\n ");
@@ -432,5 +425,3 @@ int main(int argc, char **argv){
   return 0;
 }
 #endif //__CINT__
-
-
