@@ -5,9 +5,6 @@ cd /home/brandon/coding/A2818Drv/
 sudo ./a2818_load
 Password: Sean1992
 ls
-# Prepare Root
-cd /usr/local
-source bin/thisroot.sh
 
 #PREPARING ADC SPECTRUM
 #======================
@@ -29,10 +26,17 @@ Note: "num_acquisitions" can be used to acquire different amounts of data.
 # To Run program
 cd /home/brandon/coding/vme_daq/
 ./bin/adc_spectrum
-# When a run finishes, the ADC spectrum will be displayed and saved to a *.root file. 
-# Click enter when the PMT is in the next position or next voltage is set.
-# Each run will be saved as "analysis/adc_spectrum_QUAD.root" where QUAD is the 
-# number of the current quadrant.  
+
+#All the data is stored as a continuous ASCII text file. 
+cd /home/brandon/coding/analysis/
+mkdir [INSERT_DESCRIPTIVE_FOLDER_NAME]
+mv  [file_name] [folder_name]
+python /home/brandon/coding/analysis/scripts/plot.py [BARE_PMT_FILE] [BLANK_QUARTZ_FILE] [COATED_QUARTZ_FILE]
+
+Be careful to move any files you make to either a different folder or different name because if you run the readout multiple times it will append to the same file.
+#You may have to change the "padding" variable in plot.py  depending on the 
+#width of the distribution.
+
 
 #PLATEAU TESTING
 #===============

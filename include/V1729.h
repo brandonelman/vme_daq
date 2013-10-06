@@ -56,7 +56,7 @@
 #define V1729_EN_VME_IRQ			0x8300
 #define V1729_EN_SYNC_OUT			0x1100
 #define V1729_MODE_REGISTER         0x0300
-
+#define V1729_NUMBER_OF_CHANNELS    0x3400 
 #define V1729                       0x3
 #define V1729A                      0xF
 
@@ -84,9 +84,9 @@ CVErrorCodes read_from_vme(uint32_t);
 CVErrorCodes reset_vme(void);
 CVErrorCodes start_acq(void);
 CVErrorCodes read_vme_ram(unsigned int buffer32[V1729_RAM_DEPH/2]);
+CVErrorCodes vernier(unsigned int MAXVER[4], unsigned int MINVER[4]);
 int wait_for_interrupt(void); 
 int wait_for_interrupt_vme(void); 
-int vernier(unsigned int MAXVER[4], unsigned int MINVER[4]);
 
 int get_pedestals(int pedestals[V1729_RAM_DEPH], unsigned int buffer32[V1729_RAM_DEPH/2], 
                   unsigned int buffer16[V1729_RAM_DEPH], float mean_pedestal[4]);
@@ -99,7 +99,6 @@ int reorder(unsigned int trig_rec, unsigned int post_trig, uint32_t num_columns,
             unsigned short ch3[2560]);
 
 int save(unsigned short ch0[2560], unsigned short ch1[2560], 
-         unsigned short ch2[2560], unsigned short ch3[2560], 
-         int run_num);
+         unsigned short ch2[2560], unsigned short ch3[2560]); 
 #endif
 

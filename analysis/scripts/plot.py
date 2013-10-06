@@ -1,53 +1,96 @@
+import sys, os
 import matplotlib
+import math
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import numpy as np
-from scipy import loadtxt, savetxt
-from scipy.integrate import simps, cumtrapz
-import glob
+from scipy import loadtxt, savetxt 
+from scipy.optimize import leastsq, curve_fit
 
-data = []
-for fn in sorted(glob.glob("*.dat")):
-  data.append(loadtxt(fn))
-
-print sorted(glob.glob("*.dat"))
-
-plt.figure()
-
-for ch in range(len(data)):
-    samples = np.arange(len(data[ch][0:2519]))
-    plt.plot(samples, data[ch][0:2519], label='Ch {0}'.format(ch))
-    plt.ylabel('Amplitude')
-    plt.xlabel('Time') 
-plt.savefig("Channels.pdf", format='pdf')
-
-integrated = []
-i = 0
-
-print(len(data[0]))
-num_pulses = int(len(data[0]) / 2520.0)
-print "num_pulses", num_pulses
-
-#ped = data[0][0]
-for sample in range(2520*num_pulses):
-  if sample % 2520 == 0:
-    ped = data[0][sample]
-  data[0][sample] = data[0][sample]-ped
+threshold = 50
+def checkDerivative(pulses):
+  """Removes those annoying spike points from the readout"""
   
+  for i in range(len(pulses)):
+    for j in range(len(pulses[i])-1):
+      if (j > 4000):
+        if (abs(pulses[i][j+1]-pulses[i][j]) > threshold):
+          pulses[i][j+1] = pulses[i][j]
 
-for i in range(num_pulses):
-  integrated.append(simps(data[0][i*2520:(i+1)*2520-1])) 
-#integrated = cumtrapz(data[0], None, 0.5)
-
-
-savetxt("integration.txt", integrated)
+padding = 150 
+colors = ['g', 'r', 'c', 'm', 'y', 'k']
+labels= ['10_04  COATED PMT #1_RUN_9','10_04 COATED PMT WITH QUARTZ #1_RUN_1']
+pulses = [loadtxt(sys.argv[i]) for i in range(1,len(sys.argv))] 
+checkDerivative(pulses)
+pulse_length = 2520*4
+integrated = 0
+pedestal = 8127
+#Plot Sample Pulse
 plt.figure()
-n, bins = np.histogram(integrated, bins=6)
-print 'n', n, 'bins', bins
-bincenters = 0.5*(bins[1:]+bins[:-1])
-menStd = np.sqrt(n)
-width = 1.00 
-plt.bar(bincenters, n, width=width, color='g', yerr=menStd)
-plt.xlabel('Amplitude')
-plt.ylabel('Counts')
-plt.savefig("Integrated.pdf", format='pdf')
+samples = np.arange(pulse_length)
+plt.plot(samples, pulses[0][0:pulse_length], label='Bare PMT', color='g')
+plt.plot(samples, pulses[1][0:pulse_length], label='Coated PMT', color='r')
+plt.ylabel('Channel Number')
+plt.xlabel('Sample Number (2 Samples/ns)') 
+plt.legend(loc=4)
+plt.savefig("sample_pulses.pdf", format='pdf')
+
+
+#Fit function
+def gauss(x, *p):
+  A, mu, sigma = p
+  return A*np.exp(-(x-mu)**2/(2.*sigma**2))
+
+#Integrate Pulses
+pulses_integrated = [np.zeros(len(pulses[i])) for i in range(len(pulses))]
+plt.figure()
+for readout in range(len(pulses)):
+  pulses[readout][:] = [channel - pedestal for channel in pulses[readout]]
+
+  total_pulses = len(pulses[readout])/pulse_length
+  print 'total_pulses', total_pulses
+  for pulse in range(total_pulses):
+    pulses_integrated[readout][pulse] += math.fabs(np.sum(pulses[readout][pulse_length*pulse:(pulse+1)*pulse_length-1]))*.5*10**-3
+    print 'pulses_integrated[readout][pulse]',pulses_integrated[readout][pulse]
+  max_val = max(pulses_integrated[readout])
+  min_val = min(pulses_integrated[readout])
+
+  #Histogram data
+  hist, bin_edges = np.histogram(pulses_integrated[readout].flatten(), bins=1700, range=(min_val, max_val)) 
+
+  bin_centres = (bin_edges[:-1] + bin_edges[1:])/2
+
+
+  #p0 is the initial guess
+  p0 = [100.0, max_val, 2.5]
+
+  print 'hist', hist
+  print 'np.sum(hist)', np.sum(hist)
+  print 'bin_centres', bin_centres
+ 
+  #coeff, var_matrix = curve_fit(gauss, bin_centres, hist, p0=p0)
+  #hist_fit = gauss(bin_centres, *coeff)
+
+  #A = coeff[0] 
+  #mean = coeff[1]  
+#  sigma = coeff[2] 
+#  print 'For readout number ', readout
+#  print 'A', A
+  #print 'mean', mean
+#  print 'sigma', sigma
+  print 'hist data', hist
+
+  width = bin_edges[1]-bin_edges[0]
+  #print 'width', width
+  plt.bar(bin_edges[:-1], hist, width=width, color=colors[readout], label=labels[readout])
+  #plt.plot(bin_edges[:-1], hist_fit, color=colors[readout])
+#savetxt("integrated_BARE.dat", pulses_integrated[0])
+#savetxt("integrated_BLANK.dat", pulses_integrated[1])
+#savetxt("integrated_COATED.dat", pulses_integrated[1])
+plt.xlabel("Integrated Channels")
+plt.ylabel("Number of Pulses")
+#plt.xlim(min(pulses_integrated[0])-10, max(pulses_integrated[0])+10)
+plt.xlim(0,1750)
+plt.legend()
+#plt.title(r'$A = %f\  \mu = %f\  \sigma = %f\ $' %(A,mean,sigma))
+plt.savefig("all_hist.pdf", format='pdf')
