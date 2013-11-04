@@ -40,7 +40,7 @@ void subtract_pedestals(unsigned int buffer16[V1729_RAM_DEPH], int pedestals[V17
   return;
 }
 
-CVErrorCodes set_parameters (uint32_t trig_lev) {
+CVErrorCodes set_parameters (uint32_t trig_lev, uint32_t channels) {
   CVErrorCodes ret;
  
   // Writing to TRIGGER_CHANNEL_SRC enables TRIGGER
@@ -130,7 +130,20 @@ CVErrorCodes set_parameters (uint32_t trig_lev) {
 
   // Number of Channels determines whether you do a readout over 4 Channels (0x4)
   // 1 channel (0x1) or 2 channels (0x2). Less channels means more sampling depth. 
-  ret = write_to_vme(V1729_NUMBER_OF_CHANNELS, 0x1); 
+  //ret = write_to_vme(V1729_NUMBER_OF_CHANNELS, 0x1); 
+  //ret = write_to_vme(V1729_NUMBER_OF_CHANNELS, 0x2); 
+  //ret = write_to_vme(V1729_NUMBER_OF_CHANNELS, 0x4); 
+  switch(channels){ 
+    case (4):
+      ret = write_to_vme(V1729_NUMBER_OF_CHANNELS, 0x1); 
+      break;
+    case (2):
+      ret = write_to_vme(V1729_NUMBER_OF_CHANNELS, 0x2); 
+      break;
+    case (1):
+      ret = write_to_vme(V1729_NUMBER_OF_CHANNELS, 0x4); 
+      break;
+  }
   if (ret != cvSuccess) {
     printf("Setting NUMBER_OF_CHANNELS failed with error %d \n", ret);
     return ret;
@@ -153,14 +166,16 @@ int main(int argc, char **argv) {
 
   //int bad_read = 0;
   if (argc < 3){
-    printf("USAGE: ./bin/adc_spectrum [NUM_ACQUSITIONS] [TRIGGER LEVEL IN mV]\n");
-    printf("e.g. ./bin/adc_spectrum 5000 -300\n");
+    printf("USAGE: ./bin/adc_spectrum [NUM_ACQUSITIONS] [TRIGGER LEVEL IN mV] [channels used for one pulse (4,2,1)]\n");
+    printf("e.g. ./bin/adc_spectrum 5000 -300 4\n");
+    printf("This produces a readout of 5000 pulses with -300 trigger over 4 channels\n");
     exit(1);
   }
   CVBoardTypes vme_board = cvV2718; 
   CVErrorCodes ret; // Error Codes for Debugging
   int num_acquisitions = atoi(argv[1]); // Number of times to loop acquisition
   int trigLevmV = atoi(argv[2]);
+  uint32_t channels = atoi(argv[3]);
   uint32_t trig_lev; 
 
   printf("num acquisitions: %d\n", num_acquisitions);
@@ -216,7 +231,7 @@ int main(int argc, char **argv) {
   }
 
   // Set Parameters
-  ret = set_parameters(trig_lev); 
+  ret = set_parameters(trig_lev, channels); 
   if (ret != cvSuccess) {
     printf("Setting run paramaters failed with error %d \n", ret);
     CAENVME_End(handle);
@@ -315,7 +330,7 @@ int main(int argc, char **argv) {
 //   }
 
     //Save to ASCII File
-    save(ch0, ch1, ch2, ch3);
+    save(ch0, ch1, ch2, ch3, channels);
   }
 
   printf("Closing board post-acquisition...\n ");

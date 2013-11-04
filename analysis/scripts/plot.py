@@ -16,7 +16,7 @@ if (len(sys.argv) % 2 != 0):
   exit(1)
 
 bins = 100
-threshold = 70  #For points "a" and "b", if |a-b| > threshold, cut these points.
+threshold = 1000  #For points "a" and "b", if |a-b| > threshold, cut these points.
 
 
 def checkDerivative(pulses):
@@ -46,24 +46,23 @@ pulse_length = 2520*channels
 if (channels == 1):
   upperlim = 2400 #These values are prob wrong 
   lowerlim = 2000
-  left_int_padding = 800 
+  left_int_padding = 0 
   right_int_padding = 0 #cuts pulse short already so dont need to
 elif (channels == 2):
-  upperlim = 2000  
-  lowerlim = 1500 
-  left_int_padding = 950 
-  right_int_padding = 2520 
+  upperlim = 10000  
+  lowerlim = 8300 
+  left_int_padding = 0   
+  right_int_padding = 0 
   checkDerivative(pulses)
 elif (channels == 4):
-  upperlim = 1500  
-  lowerlim = 1200 
-  left_int_padding = 1025 
-  right_int_padding = 4080 
+  upperlim = 3000  
+  lowerlim = 500 
+  left_int_padding = 0 
+  right_int_padding = 4000 
   checkDerivative(pulses)
 else: 
   print "Improper number of channels! Please try again."
   exit(1)
-
 integrated = 0
 pedestal = 8127.821289
 
@@ -74,9 +73,9 @@ for readout in range(len(pulses)):
   pulse_in_plot = 0
   plt.figure()
   for pulse in range(len(pulses[readout])/pulse_length):
-    if pulse % 10 == 0:
+    if pulse % 1 == 0:
       pulse_in_plot += 1
-      if (pulses[readout][pulse*pulse_length] > 8000 and pulses[readout][pulse*pulse_length] < 8200):
+      if (pulses[readout][pulse*pulse_length] > 7000 and pulses[readout][pulse*pulse_length] < 8200):
         #plt.plot(samples, pulses[readout][pulse*pulse_length:(pulse+1)*pulse_length], label=labels[readout])
         plt.plot(samples, pulses[readout][pulse*pulse_length+left_int_padding:(pulse+1)*pulse_length-right_int_padding], label=labels[readout])
   plt.ylabel('Channel Number')
@@ -102,6 +101,7 @@ for readout in range(len(pulses)):
   for pulse in range(total_pulses):
     #+700 avoids beginning values and -4080 avoids tail
     integrated_pulse = abs(np.sum(pulses[readout][pulse_length*pulse+left_int_padding:(pulse+1)*pulse_length-right_int_padding]))*.5*10**-3
+    print integrated_pulse
     if (integrated_pulse > upperlim):
       overflow += 1
       continue #Skips overflow pulses
@@ -123,6 +123,8 @@ for readout in range(len(pulses)):
 
 
   #p0 is the initial guess
+  print 'max(hist)', max(hist)
+  print 'bin_centres', bin_centres[np.argmax(hist)]
   p0 = [max(hist), bin_centres[np.argmax(hist)], 1.5]
   print 'Histogram Data:', hist
   print 'Total elements in hist:', np.sum(hist)

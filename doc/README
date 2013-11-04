@@ -8,34 +8,34 @@ ls
 
 #PREPARING ADC SPECTRUM
 #======================
-#SETUP: Anode Current -> Ch 0 on V1729A
-#       Pulser -> EXT TRIG on V1729A
+#SETUP: Anode Current -> Split to Ch 0-3 on V1729A
 # !!!SIGNALS MUST NOT BE ON BOARD BEFORE THE PROGRAM SAYS TO ATTACH THEM!!!
 # WD: /home/brandon/coding/vme_daq
 
-
-# You have the option of starting another acquisition based on the parameter "num_quadrants".
-# To do this, change "num_quadrants" in the file "src/main.c" to
-# how many times you want to loop num_acquisitions ----------------------------------------------set to 40
-Note: "num_acquisitions" can be used to acquire different amounts of data.
-
-# Another important parameter is "trig_lev" in "src/main.c" which is a linear function of   
-# the external trigger threshold (given in the src file) ranging from 0x0 (-1 V) to 0xFFFF(1V). 
-# It must be set in hex. The program triggers on rising edge.
-
 # To Run program
 cd /home/brandon/coding/vme_daq/
-./bin/adc_spectrum
+./bin/adc_spectrum [number of pulses to read] [desired trigger level in mV] [number of channels to read over]
+e.g.:
+./bin/adc_spectrum 5000 -350 4 
+
+This reads one pulse over four channels. The other options for number of channels are 2 and 1. I recommend a trigger level of ~ -350 for 4 channels, ~-500 for 2, and ~-600 for 1. Also, 5000 pulses provides a good amount of statistics. 
+
+If you are using 2 channels, you must use channels 0 and 1.
+If you are using 1 channel, you must use channel 0.
 
 #All the data is stored as a continuous ASCII text file. 
-cd /home/brandon/coding/analysis/
-mkdir [INSERT_DESCRIPTIVE_FOLDER_NAME]
-mv  [file_name] [folder_name]
-python /home/brandon/coding/analysis/scripts/plot.py [BARE_PMT_FILE] [BLANK_QUARTZ_FILE] [COATED_QUARTZ_FILE]
+#To plot, use the following command.
+python /home/brandon/coding/vme_daq/analysis/scripts/plot.py [number of channels used] [file_name1] [label_for_plot1] [file_name2] [label_for_plot2] etc
 
-Be careful to move any files you make to either a different folder or different name because if you run the readout multiple times it will append to the same file.
-#You may have to change the "padding" variable in plot.py  depending on the 
-#width of the distribution.
+e.g.:
+python plot.py 2 coated_pmt.dat coated_pmt bare_pmt.dat bare_pmt
+
+Make sure all labels have underscores and not spaces, because they're also used to name the pulse files. The histograms are saved in "all_hist.pdf".
+
+
+#Stick to plotting only one at a time for now. 
+
+Be careful to move any files you make to either a different folder or different name because if you run the readout multiple times it will append to the same file.You can change bin number, the threshold for removing bad points, and bounds for which you integrate (labeled as "right_int_padding" and "left_int_padding" in the file.
 
 
 #PLATEAU TESTING

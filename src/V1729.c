@@ -42,13 +42,10 @@ int mask_buffer(unsigned int buffer32[V1729_RAM_DEPH/2], unsigned int buffer16[V
 {
   int i;
   int mask = 0x3fff; /*14 bit*/
-  CVErrorCodes ret;
-
   for (i = 0; i < V1729_RAM_DEPH; i += 2) {
     buffer16[i+1] = mask & buffer32[i/2];
     buffer16[i] = mask & (buffer32[i/2]>>16);
   }
-
   return 1;
 }
 
@@ -60,20 +57,16 @@ int wait_for_interrupt(void)
   unsigned int timeout_counter =  0; /*timeout counter for waiting on interrupt*/
   unsigned int interrupt = 0; /* When 1 an interrupt has successfully been read */
                               /* When 3 there was an overflow of the buffer so your data is bad */
-  CVErrorCodes ret;
   while(interrupt != 0x1)
   {
     timeout_counter++;
-    ret = read_from_vme(V1729_INTERRUPT); 
-
+    read_from_vme(V1729_INTERRUPT); 
     interrupt = vme_data&0x3;
-
     if (interrupt == 0x3 || interrupt == 0x2)
     {
       printf("Overflow detected!");
       interrupt = 0;
     }
-
     if(timeout_counter > 0x1fffff)
     {
     printf(" Wait for interrupt has timed out.\n");
@@ -373,7 +366,7 @@ int get_pedestals(int pedestals[V1729_RAM_DEPH],
     }  
 
     /*Wait for Interrupt*/
-    wait_for_interrupt() == 0;
+    wait_for_interrupt();
 
 
     /*Read VME Ram*/
@@ -469,13 +462,11 @@ int reorder(unsigned int trig_rec, unsigned int post_trig, uint32_t num_columns,
 
 /* Saves data to files Ch#.dat */
 int save(unsigned short ch0[2560], unsigned short ch1[2560], 
-         unsigned short ch2[2560], unsigned short ch3[2560]) {
+         unsigned short ch2[2560], unsigned short ch3[2560], uint32_t channels) {
+
   FILE *file;
-  int channel_mask;
   int i;
   char s[30];
-  int num_cols;
-  CVErrorCodes ret;
 
   time_t t = time(NULL);
   struct tm tm = *localtime(&t);
@@ -484,24 +475,42 @@ int save(unsigned short ch0[2560], unsigned short ch1[2560],
   sprintf(filename, "analysis/%d-%d-%d_pulse_data.dat", tm.tm_year+1900, tm.tm_mon+1, tm.tm_mday);
 
   file = fopen(filename, "a+b");
-  for (i = 40; i < 2560; i ++) {
-    sprintf(s, "%d\n", ch0[i]);
-    fwrite(s, 1, strlen(s), file);
+  if (channels == 1) { 
+    for (i = 40; i < 2560; i ++) {
+      sprintf(s, "%d\n", ch0[i]);
+      fwrite(s, 1, strlen(s), file);
+    }
   }
 
-  for (i = 40; i < 2560; i ++) {
-    sprintf(s, "%d\n", ch1[i]);
-    fwrite(s, 1, strlen(s), file);
+  if (channels == 2) {
+    for (i = 40; i < 2560; i ++) {
+        sprintf(s, "%d\n", ch0[i]);
+        fwrite(s, 1, strlen(s), file);
+      }
+    for (i = 40; i < 2560; i ++) {
+      sprintf(s, "%d\n", ch1[i]);
+      fwrite(s, 1, strlen(s), file);
+    }
   }
 
-  for (i = 40; i < 2560; i ++) {
-    sprintf(s, "%d\n", ch2[i]);
-    fwrite(s, 1, strlen(s), file);
-  }
+  if (channels == 4) {
+    for (i = 40; i < 2560; i ++) {
+        sprintf(s, "%d\n", ch0[i]);
+        fwrite(s, 1, strlen(s), file);
+      }
+    for (i = 40; i < 2560; i ++) {
+      sprintf(s, "%d\n", ch1[i]);
+      fwrite(s, 1, strlen(s), file);
+    }
+    for (i = 40; i < 2560; i ++) {
+      sprintf(s, "%d\n", ch2[i]);
+      fwrite(s, 1, strlen(s), file);
+    }
 
-  for (i = 40; i < 2560; i ++) {
-    sprintf(s, "%d\n", ch3[i]);
-    fwrite(s, 1, strlen(s), file);
+    for (i = 40; i < 2560; i ++) {
+      sprintf(s, "%d\n", ch3[i]);
+      fwrite(s, 1, strlen(s), file);
+    }
   }
 
   fclose(file);
