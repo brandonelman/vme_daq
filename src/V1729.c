@@ -460,13 +460,19 @@ int reorder(unsigned int trig_rec, unsigned int post_trig, uint32_t num_columns,
   return 1;
 }
 
-/* Saves data to files Ch#.dat */
+int doesFileExist(const char *filename) {
+  struct stat st;
+  int result = stat(filename, &st);
+  return result == 0;
+}
+
 int save(unsigned short ch0[2560], unsigned short ch1[2560], 
-         unsigned short ch2[2560], unsigned short ch3[2560], uint32_t channels) {
+         unsigned short ch2[2560], unsigned short ch3[2560], 
+         int num_acquisitions, int trigLevmV, uint32_t channels){
 
   FILE *file;
   int i;
-  char s[30];
+  char s[150];
 
   time_t t = time(NULL);
   struct tm tm = *localtime(&t);
@@ -474,10 +480,18 @@ int save(unsigned short ch0[2560], unsigned short ch1[2560],
 
   sprintf(filename, "analysis/%d-%d-%d_pulse_data.dat", tm.tm_year+1900, tm.tm_mon+1, tm.tm_mday);
 
-  file = fopen(filename, "a+b");
+  if (!doesFileExist(filename)) {
+    file = fopen(filename, "w+b");
+    sprintf(s, "## Number of Pulses: %d  Trigger Level: %d Channels Read Over: %d Date: %d-%d-%d Time: %d:%d\n", 
+               num_acquisitions, trigLevmV, channels, tm.tm_year+1900, tm.tm_mon+1, tm.tm_mday, tm.tm_hour, tm.tm_min); 
+    fwrite(s, 1, strlen(s), file);
+  }
+  else 
+    file = fopen(filename, "a+b");
+
   if (channels == 1) { 
     for (i = 40; i < 2560; i ++) {
-      sprintf(s, "%d\n", ch0[i]);
+      sprintf(s, "%d %d %d %d %d\n", i-40, ch0[i],ch1[i],ch2[i],ch3[i]);
       fwrite(s, 1, strlen(s), file);
     }
   }

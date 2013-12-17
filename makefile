@@ -1,5 +1,5 @@
 CC=g++
-CFLAGS = -g -Iinclude/ -Wall 
+CFLAGS = -g -Iinclude/ -Wall
 OBJS = lib/V1729.o lib/V812.o
 LIBS = -lm -lCAENVME -lCAENComm
 

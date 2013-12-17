@@ -3,7 +3,6 @@
 # Load Drivers 
 cd /home/brandon/coding/A2818Drv/
 sudo ./a2818_load
-Password: Sean1992
 ls
 
 #PREPARING ADC SPECTRUM

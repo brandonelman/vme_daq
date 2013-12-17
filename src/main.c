@@ -45,7 +45,7 @@ CVErrorCodes set_parameters (uint32_t trig_lev, uint32_t channels) {
  
   // Writing to TRIGGER_CHANNEL_SRC enables TRIGGER
   // to be sent on all four chnanels simultaneously.
-  ret = write_to_vme(V1729_TRIGGER_CHANNEL_SRC, 0x1);
+  ret = write_to_vme(V1729_TRIGGER_CHANNEL_SRC, 0xf);
   if (ret != cvSuccess) {
     printf("Setting trigger channel src with error %d \n", ret);
     return ret;
@@ -150,9 +150,9 @@ CVErrorCodes set_parameters (uint32_t trig_lev, uint32_t channels) {
   }
 
   // Trigger Type
-  //ret = write_to_vme(V1729_TRIGGER_TYPE, 0x2); // Trigger on EXT TRIG Input Rising Edge
+  ret = write_to_vme(V1729_TRIGGER_TYPE, 0x2); // Trigger on EXT TRIG Input Rising Edge
   //ret = write_to_vme(V1729_TRIGGER_TYPE, 0x6); // Trigger on EXT TRIG Input Falling Edge
-  ret = write_to_vme(V1729_TRIGGER_TYPE, 0x1); // Trigger on Pulse based on TRIG_LEV
+  //ret = write_to_vme(V1729_TRIGGER_TYPE, 0x1); // Trigger on Pulse based on TRIG_LEV
   if (ret != cvSuccess) {
     printf("Setting TRIGGER_TYPE failed with error %d \n", ret);
     return ret;
@@ -184,8 +184,6 @@ int main(int argc, char **argv) {
   //Parameters
   // Let x be the desired triggering threshold value. 
   // (x+1000)*((16^3)/2000) = trig_lev
-  //uint32_t trig_lev = 0x5ff; // -250 mV Threshold
-  //uint32_t trig_lev = 0x6cc; // -250 mV Threshold
 
   trig_lev = (uint32_t)(trigLevmV+1000)*((16*16*16)/2000.0); 
 
@@ -214,7 +212,6 @@ int main(int argc, char **argv) {
   float mean_pedestal[4];
   unsigned int MAXVER[4], MINVER[4]; // MAXVER -> 1/pilot_frequency
                                      // MINVER -> Zero of the vernier
-  //char key; //Used to pause after pedestal correction to attach signal to board
 
   //Create handle for interacting with VME Board
   ret = CAENVME_Init(vme_board, 0, 0, &handle);
@@ -317,20 +314,8 @@ int main(int argc, char **argv) {
     reorder(trig_rec, post_trig, num_columns, MINVER, MAXVER, 
             buffer16, ch0, ch1, ch2, ch3);
      
-//     if (ch0[0] == 0 || ch0[0] > 10000 || ch1[0] == 0 ||  ch1[0] > 10000 || ch2[0] == 0 || ch2[0] > 10000 || ch3[0] == 0 || ch3[0] > 10000) {
-//       printf("Overflow occurred!\n");
-//       interrupts--;
-//       bad_read = 1;
-//     }
-    
-
-//   if (bad_read == 1) {
-//     bad_read = 0;
-//     continue;
-//   }
-
     //Save to ASCII File
-    save(ch0, ch1, ch2, ch3, channels);
+    save(ch0, ch1, ch2, ch3, num_acquisitions, trigLevmV, channels);
   }
 
   printf("Closing board post-acquisition...\n ");

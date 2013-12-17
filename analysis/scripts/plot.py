@@ -7,7 +7,7 @@ import numpy as np
 from scipy import loadtxt, savetxt 
 from scipy.optimize import leastsq, curve_fit
 
-usage = "USAGE: python plot.py [channels to write over] [file_name] [desired_title_of_plot].\n Can Repeat for multiple file names as follows: \npython plot.py [fn1] [title1] [fn2] [title2]" 
+usage = "USAGE: python plot.py [channels to write over] [file_name] [desired_title_of_plot].\n Can Repeat for multiple file names over 4 channels as follows: \npython plot.py 4 [fn1] [title1] [fn2] [title2]" 
 if (len(sys.argv) < 3):
   print usage 
   exit(1)
@@ -67,7 +67,6 @@ integrated = 0
 pedestal = 8127.821289
 
 #Plot Sample Pulse
-#samples = np.arange(pulse_length)
 samples = np.arange(pulse_length-left_int_padding-right_int_padding)
 for readout in range(len(pulses)):
   pulse_in_plot = 0
@@ -76,12 +75,12 @@ for readout in range(len(pulses)):
     if pulse % 1 == 0:
       pulse_in_plot += 1
       if (pulses[readout][pulse*pulse_length] > 7000 and pulses[readout][pulse*pulse_length] < 8200):
-        #plt.plot(samples, pulses[readout][pulse*pulse_length:(pulse+1)*pulse_length], label=labels[readout])
         plt.plot(samples, pulses[readout][pulse*pulse_length+left_int_padding:(pulse+1)*pulse_length-right_int_padding], label=labels[readout])
   plt.ylabel('Channel Number')
   plt.xlabel('Sample Number (2 Samples/ns)') 
   plt.title("{}: {} pulses in plot".format(labels[readout], pulse_in_plot))
   plt.savefig("{}_pulse.png".format(labels[readout]), format='png')
+
 #Fit function
 def gauss(x, *p):
   A, mu, sigma = p
@@ -99,7 +98,6 @@ for readout in range(len(pulses)):
   total_pulses = len(pulses[readout])/pulse_length
 
   for pulse in range(total_pulses):
-    #+700 avoids beginning values and -4080 avoids tail
     integrated_pulse = abs(np.sum(pulses[readout][pulse_length*pulse+left_int_padding:(pulse+1)*pulse_length-right_int_padding]))*.5*10**-3
     print integrated_pulse
     if (integrated_pulse > upperlim):
@@ -115,16 +113,17 @@ for readout in range(len(pulses)):
   min_val = min(pulses_integrated[readout])
   print 'min_val', min_val
   print 'max_val', max_val
+  print 'overflow', overflow
+  print 'underflow', underflow
 
   #Histogram data
   hist, bin_edges = np.histogram(pulses_integrated[readout], bins=bins, range=(min_val, max_val)) 
 
   bin_centres = (bin_edges[:-1] + bin_edges[1:])/2
-
+  #print 'max(hist)', max(hist)
+  #print 'bin_centres', bin_centres[np.argmax(hist)]
 
   #p0 is the initial guess
-  print 'max(hist)', max(hist)
-  print 'bin_centres', bin_centres[np.argmax(hist)]
   p0 = [max(hist), bin_centres[np.argmax(hist)], 1.5]
   print 'Histogram Data:', hist
   print 'Total elements in hist:', np.sum(hist)
@@ -135,10 +134,10 @@ for readout in range(len(pulses)):
   A = coeff[0] 
   mean = coeff[1]  
   sigma = coeff[2] 
-  print 'For readout number ', readout
-  print 'A', A
-  print 'mean', mean
-  print 'sigma', sigma
+  print 'For readout number ', readout, ':'
+  print 'A = ', A
+  print 'mean = ', mean
+  print 'sigma = ', sigma
 
   #plt.title('{}: underflow = {}, overflow = {}'.format(label[readout], underflow, overflow))
 
@@ -150,4 +149,4 @@ plt.legend()
 plt.xlabel("Integrated Channels (arbitrary units)")
 plt.ylabel("Number of Pulses")
 plt.xlim(lowerlim, upperlim)
-plt.savefig("all_hists.png", format='png')#.format(label[i]), format='png')
+plt.savefig("all_hists.png", format='png')

@@ -1,6 +1,5 @@
 #ifndef V1729_HH
 #define V1729_HH 1
-
 #ifndef LINUX
 #define LINUX 1
 #endif
@@ -15,6 +14,8 @@
 #include <math.h>
 #include <string.h>
 #include <time.h>
+#include<sys/types.h>
+#include<sys/stat.h>
 
 #ifdef WIN32
     #include <time.h>
@@ -99,6 +100,7 @@ int reorder(unsigned int trig_rec, unsigned int post_trig, uint32_t num_columns,
             unsigned short ch3[2560]);
 
 int save(unsigned short ch0[2560], unsigned short ch1[2560], 
-         unsigned short ch2[2560], unsigned short ch3[2560], uint32_t channels); 
+         unsigned short ch2[2560], unsigned short ch3[2560], 
+         int num_acqusitions, int trigLevmV, uint32_t channels); 
 #endif
 
