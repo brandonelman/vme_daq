@@ -76,6 +76,21 @@ extern uint32_t vme_data; /*Made global so I can read into it easier than passin
                      multiple pointers around. There is Probably a better 
                      way to do this.*/     
 
+typedef struct Config{
+  uint32_t TRIGGER_CHANNEL_SRC;
+  uint32_t NUM_CHANNELS;
+  uint32_t TRIGGER_TYPE;
+  int TRIGGER_THRESHOLD_MV;
+  uint32_t NUM_PULSES;
+  uint32_t MODE_REGISTER;
+  uint32_t FP_FREQUENCY;
+  uint32_t NB_OF_COLS_TO_READ;
+  uint32_t CHANNEL_MASK;
+  uint32_t PRETRIG_LSB;
+  uint32_t PRETRIG_MSB;
+  uint32_t POSTTRIG_LSB;
+  uint32_t POSTTRIG_MSB;
+} Config;
 /*********************
  Function Declarations
 *********************/

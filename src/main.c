@@ -2,6 +2,21 @@
 #define LOWER_LIM_X 0000
 #define UPPER_LIM_X 16000
 
+//Parameter Defaults
+#define DTRIGGER_CHANNEL_SRC 0xf
+#define DNUM_CHANNELS 0x4
+#define DTRIGGER_TYPE 0x2
+#define DTRIGGER_THRESHOLD_MV 300
+#define DNUM_PULSES 5000
+#define DMODE_REGISTER 0x2
+#define DFP_FREQUENCY 0x01
+#define DNB_OF_COLS_TO_READ 0x80
+#define DCHANNEL_MASK 0xf
+#define DPRETRIG_LSB 0x0
+#define DPRETRIG_MSB 0x28
+#define DPOSTTRIG_LSB 0x32
+#define DPOSTTRIG_MSB 0x0
+
 #include <math.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -14,7 +29,7 @@
 #include <unistd.h>
 #include <sys/time.h>
 #include <sys/stat.h>
-//#include <iostream>
+
 #ifndef LINUX
 #define LINUX 1
 #endif
@@ -25,6 +40,100 @@
 
 int32_t handle;
 uint32_t vme_data;
+
+void parseConfig(const char *fn, Config config){
+ FILE * fp;
+ int value;
+ ssize_t read;
+ size_t len = 0;
+ const int maxLines = 50;
+ int compareLimit = 50;
+
+ char * line = (char*)malloc(maxLines*sizeof(char));
+ char * paraF = (char*)malloc(compareLimit*sizeof(char)); //parameter name from file
+ char * paraN = (char*)malloc(compareLimit*sizeof(char));
+
+ fp = fopen(fn, "r");
+ if (fp == NULL)
+   exit(0);
+
+ while((read = getline(&line, &len, fp)) != -1) {
+   sscanf(line, "%s %d", paraF, &value);  //Set element of struct corresponding to "para" to "value" 
+   printf(line);
+   sprintf(paraN, "%s", "TRIGGER_CHANNEL_SRC");
+   if (strncmp(paraF, paraN, compareLimit) == 0){
+     config.TRIGGER_CHANNEL_SRC = value;
+     continue;
+   }
+   sprintf(paraN, "%s", "TRIGGER_TYPE");
+   if (strncmp(paraF, paraN, compareLimit) == 0){
+     config.TRIGGER_TYPE = value;
+     continue;
+   }
+   sprintf(paraN, "%s", "NUM_CHANNELS");
+   if (strncmp(paraF, paraN, compareLimit) == 0){
+     config.NUM_CHANNELS = value;
+     continue;
+   }
+   sprintf(paraN, "%s", "TRIGGER_THRESHOLD_MV");
+   if (strncmp(paraF, paraN, compareLimit) == 0){
+     config.TRIGGER_THRESHOLD_MV = value;
+     continue;
+   }
+   sprintf(paraN, "%s", "NUM_PULSES");
+   if (strncmp(paraF, paraN, compareLimit) == 0){ 
+     config.NUM_PULSES = value;
+     continue;
+   }
+   sprintf(paraN, "%s", "MODE_REGISTER");
+   if (strncmp(paraF, paraN, compareLimit) == 0){ 
+     config.MODE_REGISTER = value;
+     continue;
+   }
+   sprintf(paraN, "%s", "NB_OF_COLS_TO_READ");
+   if (strncmp(paraF, paraN, compareLimit) == 0){ 
+     config.NB_OF_COLS_TO_READ = value;
+     continue;
+   }
+   sprintf(paraN, "%s", "CHANNEL_MASK");
+   if (strncmp(paraF, paraN, compareLimit) == 0){ 
+     config.CHANNEL_MASK = value;
+     continue;
+   }
+   sprintf(paraN, "%s", "PRETRIG_LSB");
+   if (strncmp(paraF, paraN, compareLimit) == 0){ 
+     config.PRETRIG_LSB = value;
+     continue;
+   }
+   sprintf(paraN, "%s", "PRETRIG_MSB");
+   if (strncmp(paraF, paraN, compareLimit) == 0){ 
+     config.PRETRIG_MSB = value;
+     continue;
+   }
+   sprintf(paraN, "%s", "POSTTRIG_LSB");
+   if (strncmp(paraF, paraN, compareLimit) == 0){ 
+     config.POSTTRIG_LSB = value;
+     continue;
+   }
+   sprintf(paraN, "%s", "POSTTRIG_MSB");
+   if (strncmp(paraF, paraN, compareLimit) == 0){ 
+     config.POSTTRIG_MSB = value;
+     continue;
+   }
+   sprintf(paraN, "%s", "FP_FREQUENCY");
+   if (strncmp(paraF, paraN, compareLimit) == 0){ 
+     config.FP_FREQUENCY = value;
+     continue;
+   }
+ }
+ 
+ if(line)
+   free(line);
+ if(paraF)
+  free(paraF);
+ if(paraN)
+  free(paraN);
+}
 
 void subtract_pedestals(unsigned int buffer16[V1729_RAM_DEPH], int pedestals[V1729_RAM_DEPH]) {
   int i;
@@ -40,12 +149,12 @@ void subtract_pedestals(unsigned int buffer16[V1729_RAM_DEPH], int pedestals[V17
   return;
 }
 
-CVErrorCodes set_parameters (uint32_t trig_lev, uint32_t channels) {
+CVErrorCodes set_parameters (Config config) {
   CVErrorCodes ret;
  
   // Writing to TRIGGER_CHANNEL_SRC enables TRIGGER
   // to be sent on all four chnanels simultaneously.
-  ret = write_to_vme(V1729_TRIGGER_CHANNEL_SRC, 0xf);
+  ret = write_to_vme(V1729_TRIGGER_CHANNEL_SRC, config.TRIGGER_CHANNEL_SRC);
   if (ret != cvSuccess) {
     printf("Setting trigger channel src with error %d \n", ret);
     return ret;
@@ -57,6 +166,7 @@ CVErrorCodes set_parameters (uint32_t trig_lev, uint32_t channels) {
   }
 
   // Set Trigger Threshold Level to trig_lev 
+  uint32_t trig_lev = (uint32_t)(config.TRIGGER_THRESHOLD_MV+1000)*((16*16*16)/2000.0); 
   ret = write_to_vme(V1729_THRESHOLD, trig_lev);
   if (ret != cvSuccess) {
     printf("Setting trigger threshold failed with error %d \n", ret);
@@ -73,7 +183,7 @@ CVErrorCodes set_parameters (uint32_t trig_lev, uint32_t channels) {
 
   // Mode register controls whether IRQ lines are enabled (bit 0), 14bit or 12bit
   // is used (bit 1), and automatic or normal acquisition modes (bit 2)
-  ret = write_to_vme(V1729_MODE_REGISTER, 0x2); //0x3 == 0b11 -> 14Bit and IRQ
+  ret = write_to_vme(V1729_MODE_REGISTER, config.MODE_REGISTER); //0x3 == 0b11 -> 14Bit and IRQ
                                                 //0x2 == 0b10 -> 14Bit
   if (ret != cvSuccess) {
     printf("Setting mode register failed with error %d \n", ret);
@@ -81,48 +191,47 @@ CVErrorCodes set_parameters (uint32_t trig_lev, uint32_t channels) {
   }
 
   //Pilot Frequency 
-  ret = write_to_vme(V1729_FP_FREQUENCY, 0x01); //0x01 -> 2 GS/sec
+  ret = write_to_vme(V1729_FP_FREQUENCY, config.FP_FREQUENCY); //0x01 -> 2 GS/sec
   if (ret != cvSuccess) {
     printf("Setting FP_FREQUENCY failed with error %d \n", ret);
     return ret;
   }
 
   //Number of Columns
-  ret = write_to_vme(V1729_NB_OF_COLS_TO_READ, 0x80); //0x80 -> 128 Columns (All)
+  ret = write_to_vme(V1729_NB_OF_COLS_TO_READ, config.NB_OF_COLS_TO_READ); //0x80 -> 128 Columns (All)
   if (ret != cvSuccess) {
     printf("Setting NB_OF_COLS_TO_READ failed with error %d \n", ret);
     return ret;
  }
 
   //Channel Mask determine numbers of active channels
-  ret = write_to_vme(V1729_CHANNEL_MASK, 0xf); 
+  ret = write_to_vme(V1729_CHANNEL_MASK, config.CHANNEL_MASK); 
   if (ret != cvSuccess) {
     printf("Setting CHANNEL_MASK failed with error %d \n", ret);
     return ret;
   }
 
   // Pre-Trigger
-  ret = write_to_vme(V1729_PRETRIG_LSB, 0x0); 
+  ret = write_to_vme(V1729_PRETRIG_LSB, config.PRETRIG_LSB); 
   if (ret != cvSuccess) {
     printf("Setting PRETRIG_LSB failed with error %d \n", ret);
     return ret;
   }
 
-  ret = write_to_vme(V1729_PRETRIG_MSB, 0x28); 
+  ret = write_to_vme(V1729_PRETRIG_MSB, config.PRETRIG_MSB); 
   if (ret != cvSuccess) {
     printf("Setting PRETRIG_MSB failed with error %d \n", ret);
     return ret;
   }
 
   // Post-Trigger
-  //ret = write_to_vme(V1729_POSTTRIG_LSB, 0x40); 
-  ret = write_to_vme(V1729_POSTTRIG_LSB, 0x32); 
+  ret = write_to_vme(V1729_POSTTRIG_LSB, config.POSTTRIG_LSB); 
   if (ret != cvSuccess) {
     printf("Setting POSTTRIG_LSB failed with error %d \n", ret);
     return ret;
   }
 
-  ret = write_to_vme(V1729_POSTTRIG_MSB, 0x0); 
+  ret = write_to_vme(V1729_POSTTRIG_MSB, config.POSTTRIG_MSB); 
   if (ret != cvSuccess) {
     printf("Setting POSTTRIG_MSB failed with error %d \n", ret);
     return ret;
@@ -133,7 +242,7 @@ CVErrorCodes set_parameters (uint32_t trig_lev, uint32_t channels) {
   //ret = write_to_vme(V1729_NUMBER_OF_CHANNELS, 0x1); 
   //ret = write_to_vme(V1729_NUMBER_OF_CHANNELS, 0x2); 
   //ret = write_to_vme(V1729_NUMBER_OF_CHANNELS, 0x4); 
-  switch(channels){ 
+  switch(config.NUM_CHANNELS){ 
     case (4):
       ret = write_to_vme(V1729_NUMBER_OF_CHANNELS, 0x1); 
       break;
@@ -149,10 +258,11 @@ CVErrorCodes set_parameters (uint32_t trig_lev, uint32_t channels) {
     return ret;
   }
 
-  // Trigger Type
-  ret = write_to_vme(V1729_TRIGGER_TYPE, 0x2); // Trigger on EXT TRIG Input Rising Edge
+  //ret = write_to_vme(V1729_TRIGGER_TYPE, 0x2); // Trigger on EXT TRIG Input Rising Edge
   //ret = write_to_vme(V1729_TRIGGER_TYPE, 0x6); // Trigger on EXT TRIG Input Falling Edge
   //ret = write_to_vme(V1729_TRIGGER_TYPE, 0x1); // Trigger on Pulse based on TRIG_LEV
+  // Trigger Type
+  ret = write_to_vme(V1729_TRIGGER_TYPE, config.TRIGGER_TYPE); 
   if (ret != cvSuccess) {
     printf("Setting TRIGGER_TYPE failed with error %d \n", ret);
     return ret;
@@ -161,32 +271,60 @@ CVErrorCodes set_parameters (uint32_t trig_lev, uint32_t channels) {
   return ret;
 }
 
+void setDefaultConf(Config config){
+  config.TRIGGER_CHANNEL_SRC = DTRIGGER_CHANNEL_SRC;
+  config.NUM_CHANNELS = DNUM_CHANNELS;
+  config.TRIGGER_TYPE = DTRIGGER_TYPE;
+  config.TRIGGER_THRESHOLD_MV = DTRIGGER_THRESHOLD_MV;
+  config.NUM_PULSES = DNUM_PULSES;
+  config.MODE_REGISTER = DMODE_REGISTER;
+  config.FP_FREQUENCY = DFP_FREQUENCY;
+  config.NB_OF_COLS_TO_READ = DNB_OF_COLS_TO_READ;
+  config.CHANNEL_MASK = DCHANNEL_MASK;
+  config.PRETRIG_LSB = DPRETRIG_LSB;
+  config.PRETRIG_MSB = DPRETRIG_MSB;
+  config.POSTTRIG_LSB = DPOSTTRIG_LSB;
+  config.POSTTRIG_MSB = DPOSTTRIG_MSB;
+}
 
 int main(int argc, char **argv) {
 
   //int bad_read = 0;
-  if (argc < 3){
-    printf("USAGE: ./bin/adc_spectrum [NUM_ACQUSITIONS] [TRIGGER LEVEL IN mV] [channels used for one pulse (4,2,1)]\n");
-    printf("e.g. ./bin/adc_spectrum 5000 -300 4\n");
-    printf("This produces a readout of 5000 pulses with -300 trigger over 4 channels\n");
+  if (argc < 1){
+    printf("USAGE: ./bin/adc_spectrum [CONFIG_FILE_NAME]\n");
+    printf("e.g. ./bin/adc_spectrum config.conf\n");
+    printf("This produces a readout based on the parameters in the config file\n"); 
     exit(1);
   }
+
+  Config config;
   CVBoardTypes vme_board = cvV2718; 
   CVErrorCodes ret; // Error Codes for Debugging
-  int num_acquisitions = atoi(argv[1]); // Number of times to loop acquisition
-  int trigLevmV = atoi(argv[2]);
-  uint32_t channels = atoi(argv[3]);
-  uint32_t trig_lev; 
 
-  printf("num acquisitions: %d\n", num_acquisitions);
+  setDefaultConf(config);
+  parseConfig(argv[1], config);
+
+  int num_acquisitions = config.NUM_PULSES; // Number of times to loop acquisition
+  int trigLevmV = config.TRIGGER_THRESHOLD_MV;
+  uint32_t channels = config.NUM_CHANNELS;
+
+  printf("num acquisitions: %u\n", num_acquisitions);
   printf("trigLevmV: %d\n", trigLevmV);
 
-  //Parameters
-  // Let x be the desired triggering threshold value. 
-  // (x+1000)*((16^3)/2000) = trig_lev
-
-  trig_lev = (uint32_t)(trigLevmV+1000)*((16*16*16)/2000.0); 
-
+  printf("%u\n", config.TRIGGER_CHANNEL_SRC);
+  printf("%u\n", config.NUM_CHANNELS); 
+  printf("%u\n", config.TRIGGER_TYPE);
+  printf("%d\n",config.TRIGGER_THRESHOLD_MV);
+  printf("%u\n",config.NUM_PULSES);
+  printf("%u\n",config.MODE_REGISTER);
+  printf("%u\n",config.FP_FREQUENCY);
+  printf("%u\n",config.NB_OF_COLS_TO_READ);
+  printf("%u\n",config.CHANNEL_MASK);
+  printf("%u\n",config.PRETRIG_LSB);
+  printf("%u\n",config.PRETRIG_MSB);
+  printf("%u\n",config.POSTTRIG_LSB);
+  printf("%u\n",config.POSTTRIG_MSB);
+  exit(1);
   uint32_t num_columns; // number of columns to read from MATACQ matrix
   uint32_t post_trig; // Post trigger value
   unsigned int trig_rec; //Helps determine the trigger's position in the acquisition window
@@ -228,7 +366,7 @@ int main(int argc, char **argv) {
   }
 
   // Set Parameters
-  ret = set_parameters(trig_lev, channels); 
+  ret = set_parameters(config); 
   if (ret != cvSuccess) {
     printf("Setting run paramaters failed with error %d \n", ret);
     CAENVME_End(handle);
