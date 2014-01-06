@@ -3,19 +3,19 @@
 #define UPPER_LIM_X 16000
 
 //Parameter Defaults
-#define DTRIGGER_CHANNEL_SRC 0xf
-#define DNUM_CHANNELS 0x4
-#define DTRIGGER_TYPE 0x2
+#define DTRIGGER_CHANNEL_SRC 15 
+#define DNUM_CHANNELS 4
+#define DTRIGGER_TYPE 2
 #define DTRIGGER_THRESHOLD_MV 300
 #define DNUM_PULSES 5000
-#define DMODE_REGISTER 0x2
-#define DFP_FREQUENCY 0x01
-#define DNB_OF_COLS_TO_READ 0x80
-#define DCHANNEL_MASK 0xf
-#define DPRETRIG_LSB 0x0
-#define DPRETRIG_MSB 0x28
-#define DPOSTTRIG_LSB 0x32
-#define DPOSTTRIG_MSB 0x0
+#define DMODE_REGISTER 2
+#define DFP_FREQUENCY 1
+#define DNB_OF_COLS_TO_READ 128
+#define DCHANNEL_MASK 15
+#define DPRETRIG_LSB 0
+#define DPRETRIG_MSB 40 
+#define DPOSTTRIG_LSB 50
+#define DPOSTTRIG_MSB 0
 
 #include <math.h>
 #include <stdlib.h>
@@ -41,7 +41,7 @@
 int32_t handle;
 uint32_t vme_data;
 
-void parseConfig(const char *fn, Config config){
+Config parseConfig(const char *fn, Config config){
  FILE * fp;
  int value;
  ssize_t read;
@@ -60,69 +60,83 @@ void parseConfig(const char *fn, Config config){
  while((read = getline(&line, &len, fp)) != -1) {
    sscanf(line, "%s %d", paraF, &value);  //Set element of struct corresponding to "para" to "value" 
    printf(line);
+
    sprintf(paraN, "%s", "TRIGGER_CHANNEL_SRC");
    if (strncmp(paraF, paraN, compareLimit) == 0){
+     printf("TRIGGER_CHANNEL_SRC = %d\n", value);
      config.TRIGGER_CHANNEL_SRC = value;
      continue;
    }
    sprintf(paraN, "%s", "TRIGGER_TYPE");
    if (strncmp(paraF, paraN, compareLimit) == 0){
      config.TRIGGER_TYPE = value;
+     printf("TRIGGER_TYPE = %d\n", value);
      continue;
    }
    sprintf(paraN, "%s", "NUM_CHANNELS");
    if (strncmp(paraF, paraN, compareLimit) == 0){
      config.NUM_CHANNELS = value;
+     printf("NUM_CHANNELS = %d\n", value);
      continue;
    }
    sprintf(paraN, "%s", "TRIGGER_THRESHOLD_MV");
    if (strncmp(paraF, paraN, compareLimit) == 0){
      config.TRIGGER_THRESHOLD_MV = value;
+     printf("TRIGGER_THRESHOLD_MV = %d\n", value);
      continue;
    }
    sprintf(paraN, "%s", "NUM_PULSES");
    if (strncmp(paraF, paraN, compareLimit) == 0){ 
      config.NUM_PULSES = value;
+     printf("NUM_PULSES = %d\n", value);
      continue;
    }
    sprintf(paraN, "%s", "MODE_REGISTER");
    if (strncmp(paraF, paraN, compareLimit) == 0){ 
      config.MODE_REGISTER = value;
+     printf("MODE_REGISTER = %d\n", value);
      continue;
    }
    sprintf(paraN, "%s", "NB_OF_COLS_TO_READ");
    if (strncmp(paraF, paraN, compareLimit) == 0){ 
      config.NB_OF_COLS_TO_READ = value;
+     printf("NB_OF_COLS_TO_READ = %d\n", value);
      continue;
    }
    sprintf(paraN, "%s", "CHANNEL_MASK");
    if (strncmp(paraF, paraN, compareLimit) == 0){ 
      config.CHANNEL_MASK = value;
+     printf("CHANNEL_MASK = %d\n", value);
      continue;
    }
    sprintf(paraN, "%s", "PRETRIG_LSB");
    if (strncmp(paraF, paraN, compareLimit) == 0){ 
      config.PRETRIG_LSB = value;
+     printf("PRETRIG_LSB = %d\n", value);
      continue;
    }
    sprintf(paraN, "%s", "PRETRIG_MSB");
    if (strncmp(paraF, paraN, compareLimit) == 0){ 
      config.PRETRIG_MSB = value;
+     printf("PRETRIG_MSB = %d\n", value);
      continue;
    }
    sprintf(paraN, "%s", "POSTTRIG_LSB");
    if (strncmp(paraF, paraN, compareLimit) == 0){ 
      config.POSTTRIG_LSB = value;
+     printf("POSTTRIG_LSB = %d\n", value);
      continue;
    }
    sprintf(paraN, "%s", "POSTTRIG_MSB");
    if (strncmp(paraF, paraN, compareLimit) == 0){ 
      config.POSTTRIG_MSB = value;
+     printf("POSTTRIG_MSB = %d\n", value);
      continue;
    }
    sprintf(paraN, "%s", "FP_FREQUENCY");
    if (strncmp(paraF, paraN, compareLimit) == 0){ 
      config.FP_FREQUENCY = value;
+     printf("FP_FREQUENCY = %d\n", value);
      continue;
    }
  }
@@ -133,6 +147,7 @@ void parseConfig(const char *fn, Config config){
   free(paraF);
  if(paraN)
   free(paraN);
+ return config;
 }
 
 void subtract_pedestals(unsigned int buffer16[V1729_RAM_DEPH], int pedestals[V1729_RAM_DEPH]) {
@@ -302,28 +317,28 @@ int main(int argc, char **argv) {
   CVErrorCodes ret; // Error Codes for Debugging
 
   setDefaultConf(config);
-  parseConfig(argv[1], config);
+  config = parseConfig(argv[1], config);
 
   int num_acquisitions = config.NUM_PULSES; // Number of times to loop acquisition
   int trigLevmV = config.TRIGGER_THRESHOLD_MV;
   uint32_t channels = config.NUM_CHANNELS;
 
-  printf("num acquisitions: %u\n", num_acquisitions);
+  printf("num acquisitions: %d\n", num_acquisitions);
   printf("trigLevmV: %d\n", trigLevmV);
-
-  printf("%u\n", config.TRIGGER_CHANNEL_SRC);
-  printf("%u\n", config.NUM_CHANNELS); 
-  printf("%u\n", config.TRIGGER_TYPE);
-  printf("%d\n",config.TRIGGER_THRESHOLD_MV);
-  printf("%u\n",config.NUM_PULSES);
-  printf("%u\n",config.MODE_REGISTER);
-  printf("%u\n",config.FP_FREQUENCY);
-  printf("%u\n",config.NB_OF_COLS_TO_READ);
-  printf("%u\n",config.CHANNEL_MASK);
-  printf("%u\n",config.PRETRIG_LSB);
-  printf("%u\n",config.PRETRIG_MSB);
-  printf("%u\n",config.POSTTRIG_LSB);
-  printf("%u\n",config.POSTTRIG_MSB);
+  printf("\nACTUAL PARAMETERS\n");
+  printf("TRIGGER_CHANNEL_SRC = %d\n", config.TRIGGER_CHANNEL_SRC);
+  printf("NUM_CHANNELS = %d\n", config.NUM_CHANNELS); 
+  printf("TRIGGER_TYPE = %d\n", config.TRIGGER_TYPE);
+  printf("TRIGGER_THRESHOLD_MV = %d\n", config.TRIGGER_THRESHOLD_MV);
+  printf("NUM_PULSES = %d\n", config.NUM_PULSES);
+  printf("MODE_REGISTER = %d\n", config.MODE_REGISTER);
+  printf("FP_FREQUENCY = %d\n", config.FP_FREQUENCY);
+  printf("NB_OF_COLS = %d\n", config.NB_OF_COLS_TO_READ);
+  printf("CHANNEL_MASK = %d\n", config.CHANNEL_MASK);
+  printf("PRETRIG_LSB = %d\n", config.PRETRIG_LSB);
+  printf("PRETRIG_MSB = %d\n", config.PRETRIG_MSB);
+  printf("POSTTRIG_LSB = %d\n", config.POSTTRIG_LSB);
+  printf("POSTTRIG_MSB = %d\n", config.POSTTRIG_MSB);
   exit(1);
   uint32_t num_columns; // number of columns to read from MATACQ matrix
   uint32_t post_trig; // Post trigger value
