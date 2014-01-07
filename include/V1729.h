@@ -78,7 +78,7 @@ extern uint32_t vme_data; /*Made global so I can read into it easier than passin
 
 typedef struct Config{
   uint32_t TRIGGER_CHANNEL_SRC;
-  uint32_t NUM_CHANNELS;
+  uint32_t NUM_CHANNELS_PER_PULSE;
   uint32_t TRIGGER_TYPE;
   int TRIGGER_THRESHOLD_MV;
   uint32_t NUM_PULSES;
