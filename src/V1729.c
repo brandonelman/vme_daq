@@ -515,6 +515,8 @@ int save(unsigned short ch0[2560], unsigned short ch1[2560],
     sprintf(s, "PMT Serials: %s %s %s %s\n", config->PMT_SERIALS[0], config->PMT_SERIALS[1],
                                              config->PMT_SERIALS[2], config->PMT_SERIALS[3]);
     fwrite(s, 1, strlen(s), conf_file);
+    sprintf(s, "GIT VERSION: %s\n", VERSION);
+    fwrite(s, 1, strlen(s), conf_file);
     fclose(conf_file);
   }
 

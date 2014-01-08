@@ -29,8 +29,6 @@
 #endif
 
 #include "CAENVMElib.h"
-/* V1729.H : source code for V1729 module */
-/* created 14.10.2009 by Franco.LARI     */
 
 // Register addresses
 #define V1729_RESET_BOARD 			0x0800

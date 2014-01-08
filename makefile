@@ -1,7 +1,8 @@
 CC=gcc
-CFLAGS = -g -Iinclude/ -Wall
+CFLAGS = -g -Iinclude/ -Wall -DVERSION=\"$(GIT_VERSION)\"
 OBJS = lib/V1729.o lib/V812.o
 LIBS = -lm -lCAENVME -lCAENComm
+GIT_VERSION := $(shell git describe --abbrev=4 --dirty --always)
 
 all: $(OBJS)
 	$(CC)	-o bin/adc_spectrum  $(OBJS)  $(CFLAGS) src/main.c $(LIBS)

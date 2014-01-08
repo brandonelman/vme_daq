@@ -394,6 +394,12 @@ void setDefaultConf(Config *config){
   config->PRETRIG_MSB = DPRETRIG_MSB;
   config->POSTTRIG_LSB = DPOSTTRIG_LSB;
   config->POSTTRIG_MSB = DPOSTTRIG_MSB;
+  config->RUN_NUM = 99999;
+  config->TAG = "test";
+  config->PMT_SERIALS[0] = "000000";
+  config->PMT_SERIALS[1] = "000000";
+  config->PMT_SERIALS[2] = "000000";
+  config->PMT_SERIALS[3] = "000000";
 }
 
 int main(int argc, char **argv) {
@@ -568,5 +574,3 @@ int main(int argc, char **argv) {
   CAENVME_End(handle);
   return 1;
 }
-
-
