@@ -90,6 +90,9 @@ typedef struct Config{
   uint32_t PRETRIG_MSB;
   uint32_t POSTTRIG_LSB;
   uint32_t POSTTRIG_MSB;
+  uint32_t RUN_NUM;
+  char * TAG;
+  char * PMT_SERIALS[4];
 } Config;
 /*********************
  Function Declarations
@@ -116,6 +119,6 @@ int reorder(unsigned int trig_rec, unsigned int post_trig, uint32_t num_columns,
 
 int save(unsigned short ch0[2560], unsigned short ch1[2560], 
          unsigned short ch2[2560], unsigned short ch3[2560], 
-         int num_acqusitions, int trigLevmV, uint32_t channels); 
+         Config * config); 
 #endif
 

@@ -95,6 +95,8 @@ char* removeSpaces(char *str){
 
 void parseConfig(const char *fn, Config *config){
  FILE * fp;
+
+ 
  int value;
  ssize_t read;
  size_t len = 0;
@@ -103,14 +105,14 @@ void parseConfig(const char *fn, Config *config){
 
  char * line = (char*)malloc(maxLines*sizeof(char));
  char * paraF = (char*)malloc(compareLimit*sizeof(char)); //parameter name from file
- char * paraN = (char*)malloc(compareLimit*sizeof(char));
+ char * paraN = (char*)malloc(compareLimit*sizeof(char)); //Expected Parameter Names
+ char * paraV = (char*)malloc(compareLimit*sizeof(char)); 
 
  fp = fopen(fn, "r");
  if (fp == NULL)
    exit(1);
 
  while((read = getline(&line, &len, fp)) != -1) {
-   sscanf(line, "%s %d", paraF, &value);  //Set element of struct corresponding to "para" to "value" 
 
    if (strstr(line, "#") != NULL) {
     line = replace(line, '#', '\0');   
@@ -118,6 +120,26 @@ void parseConfig(const char *fn, Config *config){
    line = removeSpaces(line);
    line = strstrip(line);
 
+   sscanf(line, "%s %s", paraF, paraV);  //Set element of struct corresponding to "para" to "value" 
+
+   sprintf(paraN, "%s", "TAG");
+   if (strncmp(paraF, paraN, compareLimit) == 0){
+     printf("TAG = %s\n", paraV);
+     sprintf(config->TAG, "%s", paraV);
+     continue;
+   }
+
+   sprintf(paraN, "%s", "PMT_SERIALS");
+   if (strncmp(paraF, paraN, compareLimit) == 0){
+     printf("PMT_SERIALS = %s\n", paraV);
+     config->PMT_SERIALS[0] = strtok(paraV, " ");
+     config->PMT_SERIALS[1] = strtok(paraV, " ");
+     config->PMT_SERIALS[2] = strtok(paraV, " ");
+     config->PMT_SERIALS[3] = strtok(paraV, " ");
+     continue;
+   }
+
+   value = atoi(paraV);
    sprintf(paraN, "%s", "TRIGGER_CHANNEL_SRC");
    if (strncmp(paraF, paraN, compareLimit) == 0){
      printf("TRIGGER_CHANNEL_SRC = %d\n", value);
@@ -196,6 +218,20 @@ void parseConfig(const char *fn, Config *config){
      printf("FP_FREQUENCY = %d\n", value);
      continue;
    }
+
+   sprintf(paraN, "%s", "RUN_NUM");
+   if (strncmp(paraF, paraN, compareLimit) == 0){ 
+     config->RUN_NUM = value;
+     printf("RUN_NUM = %d\n", value);
+     continue;
+   }
+
+   sprintf(paraN, "%s", "TAG");
+   if (strncmp(paraF, paraN, compareLimit) == 0){ 
+     config->RUN_NUM = value;
+     printf("RUN_NUM = %d\n", value);
+     continue;
+   }
  }
  
  if(line)
@@ -204,6 +240,8 @@ void parseConfig(const char *fn, Config *config){
   free(paraF);
  if(paraN)
   free(paraN);
+ if(paraV)
+   free(paraV);
 }
 
 void subtract_pedestals(unsigned int buffer16[V1729_RAM_DEPH], int pedestals[V1729_RAM_DEPH]) {
@@ -377,7 +415,6 @@ int main(int argc, char **argv) {
 
   int num_acquisitions = config.NUM_PULSES; // Number of times to loop acquisition
   int trigLevmV = config.TRIGGER_THRESHOLD_MV;
-  uint32_t channels = config.NUM_CHANNELS_PER_PULSE;
 
   printf("num acquisitions: %d\n", num_acquisitions);
   printf("trigLevmV: %d\n", trigLevmV);
@@ -524,7 +561,7 @@ int main(int argc, char **argv) {
             buffer16, ch0, ch1, ch2, ch3);
      
     //Save to ASCII File
-    save(ch0, ch1, ch2, ch3, num_acquisitions, trigLevmV, channels);
+    save(ch0, ch1, ch2, ch3, &config);
   }
 
   printf("Closing board post-acquisition...\n ");
