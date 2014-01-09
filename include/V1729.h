@@ -63,6 +63,7 @@
 #define V1729_RAM_DEPH 10252
 #define V1729_NOS 2560
 #define V1729_VERNIER_DEPH 65536
+#define MAX_STRING_LENGTH 150
 
 #include "CAENVMElib.h"
 /************************************
@@ -75,22 +76,22 @@ extern uint32_t vme_data; /*Made global so I can read into it easier than passin
                      way to do this.*/     
 
 typedef struct Config{
-  uint32_t TRIGGER_CHANNEL_SRC;
-  uint32_t NUM_CHANNELS_PER_PULSE;
-  uint32_t TRIGGER_TYPE;
-  int TRIGGER_THRESHOLD_MV;
-  uint32_t NUM_PULSES;
-  uint32_t MODE_REGISTER;
-  uint32_t FP_FREQUENCY;
-  uint32_t NB_OF_COLS_TO_READ;
-  uint32_t CHANNEL_MASK;
-  uint32_t PRETRIG_LSB;
-  uint32_t PRETRIG_MSB;
-  uint32_t POSTTRIG_LSB;
-  uint32_t POSTTRIG_MSB;
-  uint32_t RUN_NUM;
-  char * TAG;
-  char * PMT_SERIALS[4];
+  uint32_t trigger_channel_src;
+  uint32_t num_channels_per_pulse;
+  uint32_t trigger_type;
+  int trigger_threshold_mv;
+  uint32_t num_pulses;
+  uint32_t mode_register;
+  uint32_t fp_frequency;
+  uint32_t nb_of_cols_to_read;
+  uint32_t channel_mask;
+  uint32_t pretrig_lsb;
+  uint32_t pretrig_msb;
+  uint32_t posttrig_lsb;
+  uint32_t posttrig_msb;
+  uint32_t run_num;
+  char tag[MAX_STRING_LENGTH];
+  char pmt_serials[3][MAX_STRING_LENGTH];
 } Config;
 /*********************
  Function Declarations
