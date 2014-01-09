@@ -63,7 +63,7 @@
 #define V1729_RAM_DEPH 10252
 #define V1729_NOS 2560
 #define V1729_VERNIER_DEPH 65536
-#define MAX_STRING_LENGTH 150
+#define MAX_STRING_LENGTH 50
 
 #include "CAENVMElib.h"
 /************************************
@@ -116,8 +116,10 @@ int reorder(unsigned int trig_rec, unsigned int post_trig, uint32_t num_columns,
             unsigned short ch0[2560],unsigned short ch1[2560], unsigned short ch2[2560],
             unsigned short ch3[2560]);
 
-int save(unsigned short ch0[2560], unsigned short ch1[2560], 
-         unsigned short ch2[2560], unsigned short ch3[2560], 
-         Config * config); 
+void save_config(Config *config, FILE *file);
+
+int save_data(unsigned short ch0[2560], unsigned short ch1[2560], 
+              unsigned short ch2[2560], unsigned short ch3[2560], 
+              Config * config, FILE *file); 
 #endif
 

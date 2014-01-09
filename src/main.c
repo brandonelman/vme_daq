@@ -92,7 +92,6 @@ void removeSpaces(char *str){
 void parseConfig(const char *fn, Config *config){
  FILE * fp;
 
- 
  int value;
  ssize_t read;
  size_t len = 0;
@@ -242,14 +241,15 @@ void parseConfig(const char *fn, Config *config){
    }
  }
  
- if(line)
-   free(line);
- if(paraF)
-  free(paraF);
- if(paraN)
-  free(paraN);
- if(paraV)
-   free(paraV);
+   if(line)
+     free(line);
+   if(paraF)
+    free(paraF);
+   if(paraN)
+    free(paraN);
+   if(paraV)
+     free(paraV);
+   return;
 }
 
 void subtract_pedestals(unsigned int buffer16[V1729_RAM_DEPH], int pedestals[V1729_RAM_DEPH]) {
@@ -410,6 +410,12 @@ void setDefaultConf(Config *config){
   strncpy(config->pmt_serials[3], "pmt3", MAX_STRING_LENGTH);
 }
 
+int doesFileExist(const char *filename) {
+  struct stat st;
+  int result = stat(filename, &st);
+  return result == 0;
+}
+
 int main(int argc, char **argv) {
 
   //int bad_read = 0;
@@ -428,10 +434,8 @@ int main(int argc, char **argv) {
   parseConfig(argv[1], &config);
 
   int num_acquisitions = config.num_pulses; // Number of times to loop acquisition
-  int trigLevmV = config.trigger_threshold_mv;
 
-  printf("num acquisitions: %d\n", num_acquisitions);
-  printf("trigLevmV: %d\n", trigLevmV);
+  if(0){
   printf("\nACTUAL PARAMETERS\n");
   printf("TRIGGER_CHANNEL_SRC = %d\n", config.trigger_channel_src);
   printf("NUM_CHANNELS_PER_PULSE = %d\n", config.num_channels_per_pulse); 
@@ -449,6 +453,7 @@ int main(int argc, char **argv) {
   printf("TAG = %s\n", config.tag);
   printf("PMT_SERIALS = %s %s %s %s\n", config.pmt_serials[0], config.pmt_serials[1],
                                         config.pmt_serials[2], config.pmt_serials[3]);
+  }
 
   uint32_t num_columns; // number of columns to read from MATACQ matrix
   uint32_t post_trig; // Post trigger value
@@ -475,6 +480,26 @@ int main(int argc, char **argv) {
   float mean_pedestal[4];
   unsigned int MAXVER[4], MINVER[4]; // MAXVER -> 1/pilot_frequency
                                      // MINVER -> Zero of the vernier
+  FILE *data_file;
+  FILE *conf_file;
+  char data_filename[MAX_STRING_LENGTH]; 
+  char conf_filename[MAX_STRING_LENGTH]; 
+  sprintf(conf_filename, "data/run_%05d_%s.conf", config.run_num, config.tag);
+
+  if (!doesFileExist(conf_filename))
+  {
+    conf_file = fopen(conf_filename, "w+b");
+    save_config(&config, conf_file);
+  }
+  else {
+    printf("Warning! Configuration file with run number %d and tag %s already exists!\n", 
+            config.run_num, config.tag);
+    exit(1);
+  }
+  fclose(conf_file);
+
+  sprintf(data_filename, "data/run_%05d_%s.dat", config.run_num, config.tag);
+  data_file = fopen(data_filename, "w+b");
 
   //Create handle for interacting with VME Board
   ret = CAENVME_Init(vme_board, 0, 0, &handle);
@@ -546,7 +571,7 @@ int main(int argc, char **argv) {
   printf("Please now attach your signal to the board. Press ENTER when ready.\n");
   while(getchar() != '\n');
   
-  while (interrupts <= num_acquisitions) {
+  while (interrupts < num_acquisitions) {
 
     ret = start_acq();
     if (ret != cvSuccess) {
@@ -576,11 +601,12 @@ int main(int argc, char **argv) {
 
     reorder(trig_rec, post_trig, num_columns, MINVER, MAXVER, 
             buffer16, ch0, ch1, ch2, ch3);
-     
+      
     //Save to ASCII File
-    save(ch0, ch1, ch2, ch3, &config);
+    save_data(ch0, ch1, ch2, ch3, &config, data_file);
   }
-
+  
+  fclose(data_file);
   CAENVME_End(handle);
   printf("Closing board post-acquisition...\n ");
   return 0;

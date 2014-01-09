@@ -460,84 +460,59 @@ int reorder(unsigned int trig_rec, unsigned int post_trig, uint32_t num_columns,
   return 1;
 }
 
-int doesFileExist(const char *filename) {
-  struct stat st;
-  int result = stat(filename, &st);
-  return result == 0;
-}
 
-int save(unsigned short ch0[2560], unsigned short ch1[2560], 
-         unsigned short ch2[2560], unsigned short ch3[2560], 
-         Config *config){
-
-  FILE *file;
-  FILE *conf_file;
-  int i;
-  
+void save_config(Config * config, FILE * conf_file){
   char s[MAX_STRING_LENGTH];
-
   time_t t = time(NULL);
   struct tm tm = *localtime(&t);
-  char data_filename[MAX_STRING_LENGTH]; 
-  char conf_filename[MAX_STRING_LENGTH]; 
-
-  //sprintf(filename, "data/%d-%d-%d_pulse_data.dat", tm.tm_year+1900, tm.tm_mon+1, tm.tm_mday);
-  
-  sprintf(data_filename, "data/run_%05d_%s.dat", config->run_num, config->tag);
-  sprintf(conf_filename, "data/run_%05d_%s.conf", config->run_num, config->tag);
-
-  if (!doesFileExist(conf_filename)) {
-    conf_file = fopen(conf_filename, "w+b");
-    sprintf(s, "Date %d-%d-%d\nTime %d:%d\n", tm.tm_year+1900, tm.tm_mon+1, 
-                                               tm.tm_mday, tm.tm_hour, tm.tm_min); 
-    fwrite(s, 1, strlen(s), conf_file);
-    sprintf(s, "Number of Pulses %u\nTrigger Level %d\nChannels Per Pulse %u\n",
-            config->num_pulses, config->trigger_threshold_mv, config->num_channels_per_pulse); 
-    fwrite(s, 1, strlen(s), conf_file);
-    sprintf(s, "TRIGGER_CHANNEL_SRC %u\n", config->trigger_channel_src);
-    fwrite(s, 1, strlen(s), conf_file);
-    sprintf(s, "TRIGGER_TYPE  %u\n", config->trigger_type);
-    fwrite(s, 1, strlen(s), conf_file);
-    sprintf(s, "MODE_REGISTER  %u\n", config->mode_register);
-    fwrite(s, 1, strlen(s), conf_file);
-    sprintf(s, "FP_FREQUENCY  %u\n", config->fp_frequency);
-    fwrite(s, 1, strlen(s), conf_file);
-    sprintf(s, "NB_OF_COLS_TO_READ  %u\n", config->nb_of_cols_to_read);
-    fwrite(s, 1, strlen(s), conf_file);
-    sprintf(s, "CHANNEL_MASK  %u\n", config->channel_mask);
-    fwrite(s, 1, strlen(s), conf_file);
-    sprintf(s, "PRETRIG_LSB  %u\n", config->pretrig_lsb);
-    fwrite(s, 1, strlen(s), conf_file);
-    sprintf(s, "PRETRIG_MSB  %u\n", config->pretrig_msb);
-    fwrite(s, 1, strlen(s), conf_file);
-    sprintf(s, "POSTTRIG_LSB  %u\n", config->posttrig_lsb);
-    fwrite(s, 1, strlen(s), conf_file);
-    sprintf(s, "POSTTRIG_MSB  %u\n", config->posttrig_msb);
-    fwrite(s, 1, strlen(s), conf_file);
-    sprintf(s, "PMT Serials %s %s %s\n", config->pmt_serials[1], config->pmt_serials[2], 
-                                          config->pmt_serials[3]);
-    fwrite(s, 1, strlen(s), conf_file);
-    sprintf(s, "Witness Serial %s\n", config->pmt_serials[0]); 
-    fwrite(s, 1, strlen(s), conf_file);
-    sprintf(s, "GIT VERSION %s\n", VERSION);
-    fwrite(s, 1, strlen(s), conf_file);
-    fclose(conf_file);
-  }
-
-
-  if (!doesFileExist(data_filename)) 
-    file = fopen(data_filename, "w+b");
-  
-  else 
-    file = fopen(data_filename, "a+b");
-
+  sprintf(s, "Date %d-%d-%d\nTime %d:%d\n", tm.tm_year+1900, tm.tm_mon+1, 
+                                            tm.tm_mday, tm.tm_hour, tm.tm_min); 
+  fwrite(s, 1, strlen(s), conf_file);
+  sprintf(s, "Number of Pulses %u\n", config->num_pulses);
+  fwrite(s, 1, strlen(s), conf_file);
+  sprintf(s, "Trigger Level %d\n",config->trigger_threshold_mv);
+  fwrite(s, 1, strlen(s), conf_file);
+  sprintf(s, "Channels Per Pulse %u\n",config->num_channels_per_pulse);
+  fwrite(s, 1, strlen(s), conf_file);
+  sprintf(s, "TRIGGER_CHANNEL_SRC %u\n", config->trigger_channel_src);
+  fwrite(s, 1, strlen(s), conf_file);
+  sprintf(s, "TRIGGER_TYPE  %u\n", config->trigger_type);
+  fwrite(s, 1, strlen(s), conf_file);
+  sprintf(s, "MODE_REGISTER  %u\n", config->mode_register);
+  fwrite(s, 1, strlen(s), conf_file);
+  printf(s, "FP_FREQUENCY  %u\n", config->fp_frequency);
+  fwrite(s, 1, strlen(s), conf_file);
+  sprintf(s, "NB_OF_COLS_TO_READ  %u\n", config->nb_of_cols_to_read);
+  fwrite(s, 1, strlen(s), conf_file);
+  sprintf(s, "CHANNEL_MASK  %u\n", config->channel_mask);
+  fwrite(s, 1, strlen(s), conf_file);
+  sprintf(s, "PRETRIG_LSB  %u\n", config->pretrig_lsb);
+  fwrite(s, 1, strlen(s), conf_file);
+  sprintf(s, "PRETRIG_MSB  %u\n", config->pretrig_msb);
+  fwrite(s, 1, strlen(s), conf_file);
+  sprintf(s, "POSTTRIG_LSB  %u\n", config->posttrig_lsb);
+  fwrite(s, 1, strlen(s), conf_file);
+  sprintf(s, "POSTTRIG_MSB  %u\n", config->posttrig_msb);
+  fwrite(s, 1, strlen(s), conf_file);
+  sprintf(s, "PMT Serials %s %s %s\n", config->pmt_serials[1], config->pmt_serials[2], 
+                                       config->pmt_serials[3]);
+  fwrite(s, 1, strlen(s), conf_file);
+  sprintf(s, "Witness Serial %s\n", config->pmt_serials[0]); 
+  fwrite(s, 1, strlen(s), conf_file);
+  sprintf(s, "GIT VERSION %s\n", VERSION);
+  fwrite(s, 1, strlen(s), conf_file);
+}
+int save_data(unsigned short ch0[2560], unsigned short ch1[2560], 
+         unsigned short ch2[2560], unsigned short ch3[2560], 
+         Config *config, FILE *file){
+  int i;
+  char s[MAX_STRING_LENGTH];
   if (config->num_channels_per_pulse == 1) { 
     for (i = 40; i < 2560; i ++) {
       sprintf(s, "%d %d %d %d %d\n", i-40, ch0[i],ch1[i],ch2[i],ch3[i]);
       fwrite(s, 1, strlen(s), file);
     }
   }
-
   if (config->num_channels_per_pulse == 2) {
     for (i = 40; i < 2560; i ++) {
         sprintf(s, "%d %d %d\n", i-40, ch0[i], ch2[i]);
@@ -548,7 +523,6 @@ int save(unsigned short ch0[2560], unsigned short ch1[2560],
       fwrite(s, 1, strlen(s), file);
     }
   }
-
   if (config->num_channels_per_pulse == 4) {
     for (i = 40; i < 2560; i ++) {
         sprintf(s, "%d %d\n", i-40, ch0[i]);
@@ -568,8 +542,5 @@ int save(unsigned short ch0[2560], unsigned short ch1[2560],
       fwrite(s, 1, strlen(s), file);
     }
   }
-
-  fclose(file);
- 
   return 1;
 }
