@@ -90,6 +90,7 @@ typedef struct Config{
   uint32_t posttrig_lsb;
   uint32_t posttrig_msb;
   uint32_t run_num;
+  char mode[MAX_STRING_LENGTH];
   char tag[MAX_STRING_LENGTH];
   char pmt_serials[3][MAX_STRING_LENGTH];
 } Config;

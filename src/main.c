@@ -107,6 +107,9 @@ void parseConfig(const char *fn, Config *config){
 
  while((read = getline(&line, &len, fp)) != -1) {
 
+   if (strstr(line, "=") != NULL) {
+     replace(line, '=', ' ');
+   }
    if (strstr(line, "#") != NULL) {
     replace(line, '#', '\0');   
    }
@@ -115,141 +118,119 @@ void parseConfig(const char *fn, Config *config){
 
    sscanf(line, "%s %s", paraF, paraV);  //Set element of struct corresponding to "para" to "value" 
 
-   sprintf(paraN, "%s", "TAG");
-   if (strncmp(paraF, paraN, MAX_STRING_LENGTH) == 0){
-     //printf("TAG = %s\n", paraV);
-     strncpy(config->tag, paraV, MAX_STRING_LENGTH);
-     continue;
-   }
-
-   sprintf(paraN, "%s", "PMT_ID_1");
+   sprintf(paraN, "%s", "pmt-id-1");
    if (strncmp(paraF, paraN, MAX_STRING_LENGTH) == 0){
      strncpy(config->pmt_serials[1], paraV, MAX_STRING_LENGTH); 
      continue;
    }
 
-   sprintf(paraN, "%s", "PMT_ID_2");
+   sprintf(paraN, "%s", "pmt-id-2");
    if (strncmp(paraF, paraN, MAX_STRING_LENGTH) == 0){
      strncpy(config->pmt_serials[2], paraV, MAX_STRING_LENGTH); 
      continue;
    }
 
-   sprintf(paraN, "%s", "PMT_ID_3");
+   sprintf(paraN, "%s", "pmt-id-3");
    if (strncmp(paraF, paraN, MAX_STRING_LENGTH) == 0){
      strncpy(config->pmt_serials[3], paraV, MAX_STRING_LENGTH); 
      continue;
    }
 
-   sprintf(paraN, "%s", "WITNESS_ID");
+   sprintf(paraN, "%s", "witness-id");
    if (strncmp(paraF, paraN, MAX_STRING_LENGTH) == 0){
      strncpy(config->pmt_serials[0], paraV, MAX_STRING_LENGTH); 
      continue;
    }
 
    value = atoi(paraV);
-   sprintf(paraN, "%s", "TRIGGER_CHANNEL_SRC");
+   sprintf(paraN, "%s", "trigger_channel_src");
    if (strncmp(paraF, paraN, MAX_STRING_LENGTH) == 0){
      //printf("TRIGGER_CHANNEL_SRC = %d\n", value);
      config->trigger_channel_src = value;
      continue;
    }
-   sprintf(paraN, "%s", "TRIGGER_TYPE");
+   sprintf(paraN, "%s", "trigger_type");
    if (strncmp(paraF, paraN, MAX_STRING_LENGTH) == 0){
      config->trigger_type = value;
      //printf("TRIGGER_TYPE = %d\n", value);
      continue;
    }
-   sprintf(paraN, "%s", "NUM_CHANNELS_PER_PULSE");
+   sprintf(paraN, "%s", "num_channels_per_pulse");
    if (strncmp(paraF, paraN, MAX_STRING_LENGTH) == 0){
      config->num_channels_per_pulse = value;
      //printf("NUM_CHANNELS_PER_PULSE = %d\n", value);
      continue;
    }
-   sprintf(paraN, "%s", "TRIGGER_THRESHOLD_MV");
+   sprintf(paraN, "%s", "trigger_threshold_mv");
    if (strncmp(paraF, paraN, MAX_STRING_LENGTH) == 0){
      config->trigger_threshold_mv = value;
      //printf("TRIGGER_THRESHOLD_MV = %d\n", value);
      continue;
    }
-   sprintf(paraN, "%s", "NUM_PULSES");
+   sprintf(paraN, "%s", "num_pulses");
    if (strncmp(paraF, paraN, MAX_STRING_LENGTH) == 0){ 
      config->num_pulses = value;
      //printf("NUM_PULSES = %d\n", value);
      continue;
    }
-   sprintf(paraN, "%s", "MODE_REGISTER");
+   sprintf(paraN, "%s", "mode_register");
    if (strncmp(paraF, paraN, MAX_STRING_LENGTH) == 0){ 
      config->mode_register = value;
      //printf("MODE_REGISTER = %d\n", value);
      continue;
    }
-   sprintf(paraN, "%s", "NB_OF_COLS_TO_READ");
+   sprintf(paraN, "%s", "nb_of_cols_to_read");
    if (strncmp(paraF, paraN, MAX_STRING_LENGTH) == 0){ 
      config->nb_of_cols_to_read = value;
      //printf("NB_OF_COLS_TO_READ = %d\n", value);
      continue;
    }
-   sprintf(paraN, "%s", "CHANNEL_MASK");
+   sprintf(paraN, "%s", "channel_mask");
    if (strncmp(paraF, paraN, MAX_STRING_LENGTH) == 0){ 
      config->channel_mask = value;
      //printf("CHANNEL_MASK = %d\n", value);
      continue;
    }
-   sprintf(paraN, "%s", "PRETRIG_LSB");
+   sprintf(paraN, "%s", "pretrig_lsb");
    if (strncmp(paraF, paraN, MAX_STRING_LENGTH) == 0){ 
      config->pretrig_lsb = value;
      //printf("PRETRIG_LSB = %d\n", value);
      continue;
    }
-   sprintf(paraN, "%s", "PRETRIG_MSB");
+   sprintf(paraN, "%s", "pretrig_msb");
    if (strncmp(paraF, paraN, MAX_STRING_LENGTH) == 0){ 
      config->pretrig_msb = value;
      //printf("PRETRIG_MSB = %d\n", value);
      continue;
    }
-   sprintf(paraN, "%s", "POSTTRIG_LSB");
+   sprintf(paraN, "%s", "posttrig_lsb");
    if (strncmp(paraF, paraN, MAX_STRING_LENGTH) == 0){ 
      config->posttrig_lsb = value;
      //printf("POSTTRIG_LSB = %d\n", value);
      continue;
    }
-   sprintf(paraN, "%s", "POSTTRIG_MSB");
+   sprintf(paraN, "%s", "posttrig_msb");
    if (strncmp(paraF, paraN, MAX_STRING_LENGTH) == 0){ 
      config->posttrig_msb = value;
      //printf("POSTTRIG_MSB = %d\n", value);
      continue;
    }
-   sprintf(paraN, "%s", "FP_FREQUENCY");
+   sprintf(paraN, "%s", "fp_frequency");
    if (strncmp(paraF, paraN, MAX_STRING_LENGTH) == 0){ 
      config->fp_frequency = value;
      //printf("FP_FREQUENCY = %d\n", value);
      continue;
    }
-
-   sprintf(paraN, "%s", "RUN_NUM");
-   if (strncmp(paraF, paraN, MAX_STRING_LENGTH) == 0){ 
-     config->run_num = value;
-     //printf("RUN_NUM = %d\n", value);
-     continue;
-   }
-
-   sprintf(paraN, "%s", "TAG");
-   if (strncmp(paraF, paraN, MAX_STRING_LENGTH) == 0){ 
-     config->run_num = value;
-     //printf("RUN_NUM = %d\n", value);
-     continue;
-   }
  }
- 
-   if(line)
-     free(line);
-   if(paraF)
-    free(paraF);
-   if(paraN)
-    free(paraN);
-   if(paraV)
-     free(paraV);
-   return;
+ if(line)
+   free(line);
+ if(paraF)
+  free(paraF);
+ if(paraN)
+  free(paraN);
+ if(paraV)
+   free(paraV);
+ return;
 }
 
 void subtract_pedestals(unsigned int buffer16[V1729_RAM_DEPH], int pedestals[V1729_RAM_DEPH]) {
@@ -402,8 +383,6 @@ void setDefaultConf(Config *config){
   config->pretrig_msb = DPRETRIG_MSB;
   config->posttrig_lsb = DPOSTTRIG_LSB;
   config->posttrig_msb = DPOSTTRIG_MSB;
-  config->run_num = 99999;
-  strncpy(config->tag, "test", MAX_STRING_LENGTH);
   strncpy(config->pmt_serials[0], "witness", MAX_STRING_LENGTH);
   strncpy(config->pmt_serials[1], "pmt1", MAX_STRING_LENGTH);
   strncpy(config->pmt_serials[2], "pmt2", MAX_STRING_LENGTH);
@@ -419,19 +398,39 @@ int doesFileExist(const char *filename) {
 int main(int argc, char **argv) {
 
   //int bad_read = 0;
-  if (argc < 2){
-    printf("USAGE: ./bin/adc_spectrum [CONFIG_FILE_NAME]\n");
-    printf("e.g. ./bin/adc_spectrum config.conf\n");
+  if (argc < 5){
+    printf("USAGE: ./bin/adc_spectrum -r [RUN_NUM] -m [MODE_NAME] -t [TAG}  [CONFIG_FILE_NAME]\n");
+    printf("e.g. ./bin/adc_spectrum -r 1000 -t pre -m gain config.conf \n");
     printf("This produces a readout based on the parameters in the config file\n"); 
     exit(1);
   }
 
   Config config;
+  int i;
+  for (i = 1; i < argc; i++) {
+    if(strncmp(argv[i], "-r", MAX_STRING_LENGTH) == 0){
+      config.run_num = atoi(argv[i+1]);
+      i += 1; //Skips unnecessary check on next element
+      continue;
+    }
+
+    if(strncmp(argv[i], "-t", MAX_STRING_LENGTH) == 0){
+      strncpy(config.tag, argv[i+1], MAX_STRING_LENGTH);
+      i += 1; 
+      continue;
+    }
+
+    if(strncmp(argv[i], "-m", MAX_STRING_LENGTH) == 0) {
+      strncpy(config.mode, argv[i+1], MAX_STRING_LENGTH);
+      i += 1; 
+      continue;
+    }
+  }
   CVBoardTypes vme_board = cvV2718; 
   CVErrorCodes ret; // Error Codes for Debugging
 
   setDefaultConf(&config);
-  parseConfig(argv[1], &config);
+  parseConfig(argv[argc-1], &config);
 
   int num_acquisitions = config.num_pulses; // Number of times to loop acquisition
 
@@ -450,7 +449,6 @@ int main(int argc, char **argv) {
   printf("PRETRIG_MSB = %d\n", config.pretrig_msb);
   printf("POSTTRIG_LSB = %d\n", config.posttrig_lsb);
   printf("POSTTRIG_MSB = %d\n", config.posttrig_msb);
-  printf("TAG = %s\n", config.tag);
   printf("PMT_SERIALS = %s %s %s %s\n", config.pmt_serials[0], config.pmt_serials[1],
                                         config.pmt_serials[2], config.pmt_serials[3]);
   }
@@ -460,7 +458,6 @@ int main(int argc, char **argv) {
   unsigned int trig_rec; //Helps determine the trigger's position in the acquisition window
   
   //Looping variables
-  int i; 
   int interrupts = 0;
 
   //Buffers for storing data
@@ -484,7 +481,7 @@ int main(int argc, char **argv) {
   FILE *conf_file;
   char data_filename[MAX_STRING_LENGTH]; 
   char conf_filename[MAX_STRING_LENGTH]; 
-  sprintf(conf_filename, "data/run_%05d_%s.conf", config.run_num, config.tag);
+  sprintf(conf_filename, "data/run_%05d_%s_%s.conf", config.run_num, config.tag, config.mode);
 
   if (!doesFileExist(conf_filename))
   {
@@ -498,7 +495,7 @@ int main(int argc, char **argv) {
   }
   fclose(conf_file);
 
-  sprintf(data_filename, "data/run_%05d_%s.dat", config.run_num, config.tag);
+  sprintf(data_filename, "data/run_%05d_%s_%s.dat", config.run_num, config.tag, config.mode);
   data_file = fopen(data_filename, "w+b");
 
   //Create handle for interacting with VME Board
