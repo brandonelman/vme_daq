@@ -38,7 +38,7 @@ CVErrorCodes start_acq()
 }
 
 /* Mask Buffer places the data stored in buffer32 into buffer16 */
-int mask_buffer(unsigned int buffer32[V1729_RAM_DEPH/2], unsigned int buffer16[V1729_RAM_DEPH])
+void mask_buffer(unsigned int buffer32[V1729_RAM_DEPH/2], unsigned int buffer16[V1729_RAM_DEPH])
 {
   int i;
   int mask = 0x3fff; /*14 bit*/
@@ -46,20 +46,15 @@ int mask_buffer(unsigned int buffer32[V1729_RAM_DEPH/2], unsigned int buffer16[V
     buffer16[i+1] = mask & buffer32[i/2];
     buffer16[i] = mask & (buffer32[i/2]>>16);
   }
-  return 1;
 }
 
-/* Standard way of discovering interrupt by scanning register. More noisy than IRQ 
-   method (see: wait_for_interrupt_vme); however, the other method isn't quite working 
-   yet possibly due to incorrect mask choices */
-int wait_for_interrupt(void)
+/* Standard way of discovering interrupt by scanning register. */
+void wait_for_interrupt(void)
 {
-  unsigned int timeout_counter =  0; /*timeout counter for waiting on interrupt*/
   unsigned int interrupt = 0; /* When 1 an interrupt has successfully been read */
                               /* When 3 there was an overflow of the buffer so your data is bad */
   while(interrupt != 0x1)
   {
-    timeout_counter++;
     read_from_vme(V1729_INTERRUPT); 
     interrupt = vme_data&0x3;
     if (interrupt == 0x3 || interrupt == 0x2)
@@ -67,47 +62,11 @@ int wait_for_interrupt(void)
       printf("Overflow detected!");
       interrupt = 0;
     }
-    if(timeout_counter > 0x1fffff)
-    {
-    printf(" Wait for interrupt has timed out.\n");
-    return 0;
-    }
   }
-  return 1;
-}
-
-/* Preferred method of interrupt discovery.. Not tested yet */
-int wait_for_interrupt_vme(void)
-{
-  int vector;
-  CVErrorCodes ret;
-  ret = CAENVME_IRQEnable(handle, 0xf);
-  if (ret != cvSuccess)
-  {
-    printf("Failed enabling IRQ3 with error %d", ret); 
-    return 0;
-  }
-
-  ret = CAENVME_IRQWait(handle, cvIRQ3, 0xf); 
-  if (ret != cvSuccess)
-  {
-    printf("Failed waiting for interrupt with error %d", ret); 
-    return 0;
-  }
-
-  ret = CAENVME_IACKCycle(handle, cvIRQ3, &vector, cvD32);
-  if (ret != cvSuccess)
-  {
-    printf("Failed IACKCycle with error %d", ret); 
-    return 0;
-  }
-
-
-  return 1;
 }
 
 /* Read the RAM of the ADC by realizing N successive readings of the 
-   RAM register. BLT is preferred but apparently not working */
+   RAM register. */
 CVErrorCodes read_vme_ram(unsigned int buffer32[V1729_RAM_DEPH/2])
 {
   int i;
@@ -131,15 +90,6 @@ CVErrorCodes read_vme_ram(unsigned int buffer32[V1729_RAM_DEPH/2])
   }
 
   return cvSuccess;
-
-/* BROKEN BLT VERSION
-  uint32_t vme_addr = CAENBASEADDRESS + V1729_RAM_DATA_VME; 
-  CVDataWidth data_size = cvD32;
-  int count; number of bytes transferred
-
-  return  CAENVME_BLTReadCycle(handle, vme_addr, buffer32, V1729_RAM_DEPH/2, 
-                               cvA32_S_BLT, data_size, &count);  
-*/
 }
 
 
@@ -378,11 +328,7 @@ int get_pedestals(int pedestals[V1729_RAM_DEPH],
     }  
 
     /*Mask Buffer*/
-    if( mask_buffer(buffer32, buffer16) == 0 ) {
-      printf("        Masking the buffer has failed with error %d\n", ret);
-      reset_vme();
-      return 0;
-      }
+    mask_buffer(buffer32, buffer16);
 
     /*Find Pedestals*/
     for (j = 0; j < 2560; j++)
@@ -431,9 +377,10 @@ int get_pedestals(int pedestals[V1729_RAM_DEPH],
 } 
 
 /* Reorders data as described by equations in manual */
-int reorder(unsigned int trig_rec, unsigned int post_trig, uint32_t num_columns, 
-            unsigned int MINVER[4], unsigned int MAXVER[4], unsigned int buffer16[V1729_RAM_DEPH], 
-            unsigned short ch0[2560],unsigned short ch1[2560], unsigned short ch2[2560], 
+void reorder(unsigned int trig_rec, unsigned int post_trig, 
+            unsigned int MINVER[4], unsigned int MAXVER[4], 
+            unsigned int buffer16[V1729_RAM_DEPH], unsigned short ch0[2560],
+            unsigned short ch1[2560], unsigned short ch2[2560], 
             unsigned short ch3[2560]) {
   int i, j;
   int end_cell;
@@ -445,7 +392,6 @@ int reorder(unsigned int trig_rec, unsigned int post_trig, uint32_t num_columns,
     cor_ver += (int)(20*ver[i]/4);
   }
   
-  /* These Formulas look wrong compared to manual, but they were used by CAEN */
   end_cell = (20*(128-trig_rec+post_trig) + 1) % 2560;
 
   for (i = 0; i < 2560; i++)
@@ -456,8 +402,6 @@ int reorder(unsigned int trig_rec, unsigned int post_trig, uint32_t num_columns,
     ch1[i] = buffer16[4*j+14];
     ch0[i] = buffer16[4*j+15]; 
   }
-
-  return 1;
 }
 
 

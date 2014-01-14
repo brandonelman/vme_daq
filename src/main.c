@@ -462,7 +462,6 @@ int main(int argc, char **argv) {
                                         config.pmt_serials[2], config.pmt_serials[3]);
   }
 
-  uint32_t num_columns; // number of columns to read from MATACQ matrix
   uint32_t post_trig; // Post trigger value
   unsigned int trig_rec; //Helps determine the trigger's position in the acquisition window
   
@@ -528,14 +527,6 @@ int main(int argc, char **argv) {
     CAENVME_End(handle);
     return 0;
   }
-
-  // Get Number of Columns to Read from Matrix
-  ret = read_from_vme(V1729_NB_OF_COLS_TO_READ);
-  if (ret != cvSuccess) {
-    printf(" Loading number of columns failed with error %d\n", ret);
-    return 0;
-  }
-  num_columns = vme_data&0xff;
 
   //Get Post-Trig
   ret = read_from_vme(V1729_POSTTRIG_LSB);
@@ -605,7 +596,7 @@ int main(int argc, char **argv) {
 
     subtract_pedestals(buffer16, pedestals); 
 
-    reorder(trig_rec, post_trig, num_columns, MINVER, MAXVER, 
+    reorder(trig_rec, post_trig, MINVER, MAXVER, 
             buffer16, ch0, ch1, ch2, ch3);
       
     //Save to ASCII File
