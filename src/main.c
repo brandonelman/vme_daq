@@ -141,84 +141,94 @@ void parseConfig(const char *fn, Config *config){
      strncpy(config->pmt_serials[0], paraV, MAX_STRING_LENGTH); 
      continue;
    }
-
-   value = atoi(paraV);
-   sprintf(paraN, "%s", "trigger_channel_src");
+   
+   sprintf(paraN, "%s", "output-folder");
    if (strncmp(paraF, paraN, MAX_STRING_LENGTH) == 0){
-     //printf("TRIGGER_CHANNEL_SRC = %d\n", value);
+     strncpy(config->output_folder, paraV, MAX_STRING_LENGTH); 
+     continue;
+   }
+
+   value = atoi(paraV); //All other values are integers rather than strings 
+   sprintf(paraN, "%s", "trigger-channel-src");
+   if (strncmp(paraF, paraN, MAX_STRING_LENGTH) == 0){
      config->trigger_channel_src = value;
      continue;
    }
-   sprintf(paraN, "%s", "trigger_type");
+   sprintf(paraN, "%s", "trigger-type");
    if (strncmp(paraF, paraN, MAX_STRING_LENGTH) == 0){
      config->trigger_type = value;
-     //printf("TRIGGER_TYPE = %d\n", value);
      continue;
    }
-   sprintf(paraN, "%s", "num_channels_per_pulse");
+   sprintf(paraN, "%s", "num-channels-per-pulse");
    if (strncmp(paraF, paraN, MAX_STRING_LENGTH) == 0){
      config->num_channels_per_pulse = value;
-     //printf("NUM_CHANNELS_PER_PULSE = %d\n", value);
      continue;
    }
-   sprintf(paraN, "%s", "trigger_threshold_mv");
+   sprintf(paraN, "%s", "trigger-threshold-mv");
    if (strncmp(paraF, paraN, MAX_STRING_LENGTH) == 0){
      config->trigger_threshold_mv = value;
-     //printf("TRIGGER_THRESHOLD_MV = %d\n", value);
      continue;
    }
-   sprintf(paraN, "%s", "num_pulses");
+   sprintf(paraN, "%s", "num-pulses");
    if (strncmp(paraF, paraN, MAX_STRING_LENGTH) == 0){ 
      config->num_pulses = value;
-     //printf("NUM_PULSES = %d\n", value);
      continue;
    }
-   sprintf(paraN, "%s", "mode_register");
+   sprintf(paraN, "%s", "mode-register");
    if (strncmp(paraF, paraN, MAX_STRING_LENGTH) == 0){ 
      config->mode_register = value;
-     //printf("MODE_REGISTER = %d\n", value);
      continue;
    }
-   sprintf(paraN, "%s", "nb_of_cols_to_read");
+   sprintf(paraN, "%s", "nb-of-cols-to-read");
    if (strncmp(paraF, paraN, MAX_STRING_LENGTH) == 0){ 
      config->nb_of_cols_to_read = value;
-     //printf("NB_OF_COLS_TO_READ = %d\n", value);
      continue;
    }
-   sprintf(paraN, "%s", "channel_mask");
+   sprintf(paraN, "%s", "channel-mask");
    if (strncmp(paraF, paraN, MAX_STRING_LENGTH) == 0){ 
      config->channel_mask = value;
-     //printf("CHANNEL_MASK = %d\n", value);
      continue;
    }
-   sprintf(paraN, "%s", "pretrig_lsb");
+   sprintf(paraN, "%s", "pretrig-lsb");
    if (strncmp(paraF, paraN, MAX_STRING_LENGTH) == 0){ 
      config->pretrig_lsb = value;
-     //printf("PRETRIG_LSB = %d\n", value);
      continue;
    }
-   sprintf(paraN, "%s", "pretrig_msb");
+   sprintf(paraN, "%s", "pretrig-msb");
    if (strncmp(paraF, paraN, MAX_STRING_LENGTH) == 0){ 
      config->pretrig_msb = value;
-     //printf("PRETRIG_MSB = %d\n", value);
      continue;
    }
-   sprintf(paraN, "%s", "posttrig_lsb");
+   sprintf(paraN, "%s", "posttrig-lsb");
    if (strncmp(paraF, paraN, MAX_STRING_LENGTH) == 0){ 
      config->posttrig_lsb = value;
-     //printf("POSTTRIG_LSB = %d\n", value);
      continue;
    }
-   sprintf(paraN, "%s", "posttrig_msb");
+   sprintf(paraN, "%s", "posttrig-msb");
    if (strncmp(paraF, paraN, MAX_STRING_LENGTH) == 0){ 
      config->posttrig_msb = value;
-     //printf("POSTTRIG_MSB = %d\n", value);
      continue;
    }
-   sprintf(paraN, "%s", "fp_frequency");
+   sprintf(paraN, "%s", "fp-frequency");
    if (strncmp(paraF, paraN, MAX_STRING_LENGTH) == 0){ 
      config->fp_frequency = value;
-     //printf("FP_FREQUENCY = %d\n", value);
+     continue;
+   }
+
+
+   sprintf(paraN, "%s", "pmt-voltage");
+   if (strncmp(paraF, paraN, MAX_STRING_LENGTH) == 0){ 
+     config->pmt_voltage = value;
+     continue;
+   }
+   sprintf(paraN, "%s", "lamp-voltage");
+   if (strncmp(paraF, paraN, MAX_STRING_LENGTH) == 0){ 
+     config->lamp_voltage = value;
+     continue;
+   }
+   sprintf(paraN, "%s", "lamp-frequency");
+   if (strncmp(paraF, paraN, MAX_STRING_LENGTH) == 0){ 
+     config->lamp_frequency = value;
      continue;
    }
  }
@@ -481,7 +491,7 @@ int main(int argc, char **argv) {
   FILE *conf_file;
   char data_filename[MAX_STRING_LENGTH]; 
   char conf_filename[MAX_STRING_LENGTH]; 
-  sprintf(conf_filename, "data/run_%05d_%s_%s.conf", config.run_num, config.tag, config.mode);
+  sprintf(conf_filename, "%s/run_%05d_%s_%s.conf", config.output_folder, config.run_num, config.tag, config.mode);
 
   if (!doesFileExist(conf_filename))
   {
@@ -495,7 +505,7 @@ int main(int argc, char **argv) {
   }
   fclose(conf_file);
 
-  sprintf(data_filename, "data/run_%05d_%s_%s.dat", config.run_num, config.tag, config.mode);
+  sprintf(data_filename, "%s/run_%05d_%s_%s.dat", config.output_folder, config.run_num, config.tag, config.mode);
   data_file = fopen(data_filename, "w+b");
 
   //Create handle for interacting with VME Board

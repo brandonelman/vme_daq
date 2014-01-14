@@ -465,44 +465,61 @@ void save_config(Config * config, FILE * conf_file){
   char s[MAX_STRING_LENGTH];
   time_t t = time(NULL);
   struct tm tm = *localtime(&t);
-  sprintf(s, "Date %d-%d-%d\nTime %d:%d\n", tm.tm_year+1900, tm.tm_mon+1, 
+  sprintf(s, "#Date %d-%d-%d Time %d:%d\n", tm.tm_year+1900, tm.tm_mon+1, 
                                             tm.tm_mday, tm.tm_hour, tm.tm_min); 
   fwrite(s, 1, strlen(s), conf_file);
-  sprintf(s, "num_pulses %10u\n", config->num_pulses);
+  sprintf(s, "#GIT VERSION %10s\n", VERSION);
   fwrite(s, 1, strlen(s), conf_file);
-  sprintf(s, "trig_threshold_mv Level %10d\n",config->trigger_threshold_mv);
+
+  sprintf(s, "%s\n","[VME]"); //Contains all DAQ info
   fwrite(s, 1, strlen(s), conf_file);
-  sprintf(s, "num_channels_per_pulse %10u\n",config->num_channels_per_pulse);
+  sprintf(s, "%-23s = %10u\n", "num-pulses", config->num_pulses);
   fwrite(s, 1, strlen(s), conf_file);
-  sprintf(s, "trigger_channel_src %10u\n", config->trigger_channel_src);
+  sprintf(s, "%-23s = %10d\n", "trigger-threshold-mv", config->trigger_threshold_mv);
   fwrite(s, 1, strlen(s), conf_file);
-  sprintf(s, "trigger_type  %10u\n", config->trigger_type);
+  sprintf(s, "%-23s = %10u\n", "num-channels-per-pulse", config->num_channels_per_pulse);
   fwrite(s, 1, strlen(s), conf_file);
-  sprintf(s, "mode_register  %10u\n", config->mode_register);
+  sprintf(s, "%-23s = %10u\n", "trigger-channel-src", config->trigger_channel_src);
   fwrite(s, 1, strlen(s), conf_file);
-  printf(s, "fp_frequency  %10u\n", config->fp_frequency);
+  sprintf(s, "%-23s = %10u\n", "trigger-type", config->trigger_type);
   fwrite(s, 1, strlen(s), conf_file);
-  sprintf(s, "nb_of_cols_to_read  %10u\n", config->nb_of_cols_to_read);
+  sprintf(s, "%-23s = %10u\n", "mode-register", config->mode_register);
   fwrite(s, 1, strlen(s), conf_file);
-  sprintf(s, "channel_mask  %10u\n", config->channel_mask);
+  sprintf(s, "%-23s = %10u\n", "fp-frequency" ,config->fp_frequency);
   fwrite(s, 1, strlen(s), conf_file);
-  sprintf(s, "pretrig_lsb  %10u\n", config->pretrig_lsb);
+  sprintf(s, "%-23s = %10u\n", "nb-of-cols-to-read", config->nb_of_cols_to_read);
   fwrite(s, 1, strlen(s), conf_file);
-  sprintf(s, "pretrig_msb  %10u\n", config->pretrig_msb);
+  sprintf(s, "%-23s = %10u\n", "channel-mask", config->channel_mask);
   fwrite(s, 1, strlen(s), conf_file);
-  sprintf(s, "posttrig_lsb  %10u\n", config->posttrig_lsb);
+  sprintf(s, "%-23s = %10u\n", "pretrig-lsb", config->pretrig_lsb);
   fwrite(s, 1, strlen(s), conf_file);
-  sprintf(s, "posttrig_msb  %10u\n", config->posttrig_msb);
+  sprintf(s, "%-23s = %10u\n", "pretrig-msb", config->pretrig_msb);
   fwrite(s, 1, strlen(s), conf_file);
-  sprintf(s, "pmt_id_1 %10s\n", config->pmt_serials[1]);
+  sprintf(s, "%-23s = %10u\n", "posttrig-lsb", config->posttrig_lsb);
   fwrite(s, 1, strlen(s), conf_file);
-  sprintf(s, "pmt_id_2 %10s\n", config->pmt_serials[2]);
+  sprintf(s, "%-23s = %10u\n", "posttrig-msb", config->posttrig_msb);
   fwrite(s, 1, strlen(s), conf_file);
-  sprintf(s, "pmt_id_3 %10s\n", config->pmt_serials[3]);
+  sprintf(s, "%-23s = %10s\n", "output-folder", config->output_folder);
   fwrite(s, 1, strlen(s), conf_file);
-  sprintf(s, "witness_id%10s\n", config->pmt_serials[0]); 
+
+
+  sprintf(s, "%s\n","[Hardware]"); //Contains all DAQ info
   fwrite(s, 1, strlen(s), conf_file);
-  sprintf(s, "GIT VERSION %10s\n", VERSION);
+  sprintf(s, "%-23s = %10s\n", "pmt-id-1", config->pmt_serials[1]);
+  fwrite(s, 1, strlen(s), conf_file);
+  sprintf(s, "%-23s = %10s\n", "pmt-id-2", config->pmt_serials[2]);
+  fwrite(s, 1, strlen(s), conf_file);
+
+  printf("config->pmt-serials[3] = %s\n", config->pmt_serials[3]);
+  sprintf(s, "%-23s = %10s\n", "pmt-id-3", config->pmt_serials[3]);
+  fwrite(s, 1, strlen(s), conf_file);
+  sprintf(s, "%-23s = %10s\n", "witness-id", config->pmt_serials[0]); 
+  fwrite(s, 1, strlen(s), conf_file);
+  sprintf(s, "%-23s = %10u\n", "pmt-voltage", config->pmt_voltage);
+  fwrite(s, 1, strlen(s), conf_file);
+  sprintf(s, "%-23s = %10u\n", "lamp-voltage", config->lamp_voltage);
+  fwrite(s, 1, strlen(s), conf_file);
+  sprintf(s, "%-23s = %10u\n", "lamp-frequency", config->lamp_frequency);
   fwrite(s, 1, strlen(s), conf_file);
 }
 int save_data(unsigned short ch0[2560], unsigned short ch1[2560], 

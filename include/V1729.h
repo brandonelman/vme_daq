@@ -92,7 +92,11 @@ typedef struct Config{
   uint32_t run_num;
   char mode[MAX_STRING_LENGTH];
   char tag[MAX_STRING_LENGTH];
+  char output_folder[MAX_STRING_LENGTH];
   char pmt_serials[3][MAX_STRING_LENGTH];
+  uint32_t pmt_voltage;
+  uint32_t lamp_voltage;
+  uint32_t lamp_frequency;
 } Config;
 /*********************
  Function Declarations
