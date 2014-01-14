@@ -520,17 +520,28 @@ void save_config(Config * config, FILE * conf_file){
   sprintf(s, "%-23s = %10u\n", "lamp-frequency", config->lamp_frequency);
   fwrite(s, 1, strlen(s), conf_file);
 }
-int save_data(unsigned short ch0[2560], unsigned short ch1[2560], 
+
+void save_data(unsigned short ch0[2560], unsigned short ch1[2560], 
          unsigned short ch2[2560], unsigned short ch3[2560], 
          Config *config, FILE *file){
   int i;
   char s[MAX_STRING_LENGTH];
+
+  if (strncmp(config->mode, "surf", MAX_STRING_LENGTH) == 0) {
+    for (i = 40; i < 2560; i ++) {
+      sprintf(s, "%d %d\n", i-40, ch0[i]);
+      fwrite(s, 1, strlen(s), file);
+    }
+    return;
+  }
+
   if (config->num_channels_per_pulse == 1) { 
     for (i = 40; i < 2560; i ++) {
       sprintf(s, "%d %d %d %d %d\n", i-40, ch0[i],ch1[i],ch2[i],ch3[i]);
       fwrite(s, 1, strlen(s), file);
     }
   }
+
   if (config->num_channels_per_pulse == 2) {
     for (i = 40; i < 2560; i ++) {
         sprintf(s, "%d %d %d\n", i-40, ch0[i], ch2[i]);
@@ -560,5 +571,5 @@ int save_data(unsigned short ch0[2560], unsigned short ch1[2560],
       fwrite(s, 1, strlen(s), file);
     }
   }
-  return 1;
+  return;
 }

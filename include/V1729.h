@@ -123,7 +123,7 @@ int reorder(unsigned int trig_rec, unsigned int post_trig, uint32_t num_columns,
 
 void save_config(Config *config, FILE *file);
 
-int save_data(unsigned short ch0[2560], unsigned short ch1[2560], 
+void save_data(unsigned short ch0[2560], unsigned short ch1[2560], 
               unsigned short ch2[2560], unsigned short ch3[2560], 
               Config * config, FILE *file); 
 #endif
