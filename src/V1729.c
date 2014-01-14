@@ -509,8 +509,6 @@ void save_config(Config * config, FILE * conf_file){
   fwrite(s, 1, strlen(s), conf_file);
   sprintf(s, "%-23s = %10s\n", "pmt-id-2", config->pmt_serials[2]);
   fwrite(s, 1, strlen(s), conf_file);
-
-  printf("config->pmt-serials[3] = %s\n", config->pmt_serials[3]);
   sprintf(s, "%-23s = %10s\n", "pmt-id-3", config->pmt_serials[3]);
   fwrite(s, 1, strlen(s), conf_file);
   sprintf(s, "%-23s = %10s\n", "witness-id", config->pmt_serials[0]); 

@@ -148,6 +148,7 @@ void parseConfig(const char *fn, Config *config){
      continue;
    }
 
+
    value = atoi(paraV); //All other values are integers rather than strings 
    sprintf(paraN, "%s", "trigger-channel-src");
    if (strncmp(paraF, paraN, MAX_STRING_LENGTH) == 0){
@@ -214,8 +215,6 @@ void parseConfig(const char *fn, Config *config){
      config->fp_frequency = value;
      continue;
    }
-
-
    sprintf(paraN, "%s", "pmt-voltage");
    if (strncmp(paraF, paraN, MAX_STRING_LENGTH) == 0){ 
      config->pmt_voltage = value;
