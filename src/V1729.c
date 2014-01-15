@@ -409,7 +409,7 @@ void save_config(Config * config, FILE * conf_file){
   char s[MAX_STRING_LENGTH];
   time_t t = time(NULL);
   struct tm tm = *localtime(&t);
-  sprintf(s, "#Date %d-%d-%d Time %d:%d\n", tm.tm_year+1900, tm.tm_mon+1, 
+  sprintf(s, "#Date %4d-%02d-%02d Time %02d:%02d\n", tm.tm_year+1900, tm.tm_mon+1, 
                                             tm.tm_mday, tm.tm_hour, tm.tm_min); 
   fwrite(s, 1, strlen(s), conf_file);
   sprintf(s, "#GIT VERSION %10s\n", VERSION);

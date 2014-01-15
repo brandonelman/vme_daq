@@ -392,10 +392,10 @@ void setDefaultConf(Config *config){
   config->pretrig_msb = DPRETRIG_MSB;
   config->posttrig_lsb = DPOSTTRIG_LSB;
   config->posttrig_msb = DPOSTTRIG_MSB;
-  strncpy(config->pmt_serials[0], "witness", MAX_STRING_LENGTH);
-  strncpy(config->pmt_serials[1], "pmt1", MAX_STRING_LENGTH);
-  strncpy(config->pmt_serials[2], "pmt2", MAX_STRING_LENGTH);
-  strncpy(config->pmt_serials[3], "pmt3", MAX_STRING_LENGTH);
+  strncpy(config->pmt_serials[0], "none", MAX_STRING_LENGTH);
+  strncpy(config->pmt_serials[1], "none", MAX_STRING_LENGTH);
+  strncpy(config->pmt_serials[2], "none", MAX_STRING_LENGTH);
+  strncpy(config->pmt_serials[3], "none", MAX_STRING_LENGTH);
 }
 
 int doesFileExist(const char *filename) {
@@ -408,9 +408,11 @@ int main(int argc, char **argv) {
 
   //int bad_read = 0;
   if (argc < 5){
-    printf("USAGE: ./bin/adc_spectrum -r [RUN_NUM] -m [MODE_NAME] -t [TAG}  [CONFIG_FILE_NAME]\n");
-    printf("e.g. ./bin/adc_spectrum -r 1000 -t pre -m gain config.conf \n");
+    printf("USAGE: ./bin/daq -r [RUN_NUM] -m [MODE_NAME] -t [TAG]  [CONFIG_FILE_NAME]\n");
+    printf("e.g. ./bin/daq -r 1000 -t pre_gain -m run config.conf \n");
     printf("This produces a readout based on the parameters in the config file\n"); 
+    printf("Mode options: run, surf, misc\n");
+    printf("Tag options: pre_gain, post_gain, pre_spe, post_spe, ang0, ang90, ang180, ang270\n");
     exit(1);
   }
 
@@ -489,7 +491,7 @@ int main(int argc, char **argv) {
   FILE *conf_file;
   char data_filename[MAX_STRING_LENGTH]; 
   char conf_filename[MAX_STRING_LENGTH]; 
-  sprintf(conf_filename, "%s/run_%05d_%s_%s.conf", config.output_folder, config.run_num, config.tag, config.mode);
+  sprintf(conf_filename, "%s/%s_%05d_%s.conf", config.output_folder, config.mode, config.run_num, config.tag);
 
   if (!doesFileExist(conf_filename))
   {
@@ -503,7 +505,7 @@ int main(int argc, char **argv) {
   }
   fclose(conf_file);
 
-  sprintf(data_filename, "%s/run_%05d_%s_%s.dat", config.output_folder, config.run_num, config.tag, config.mode);
+  sprintf(data_filename, "%s/%s_%05d_%s.dat", config.output_folder, config.mode, config.run_num, config.tag);
   data_file = fopen(data_filename, "w+b");
 
   //Create handle for interacting with VME Board
