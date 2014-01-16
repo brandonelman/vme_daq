@@ -471,18 +471,55 @@ void save_data(unsigned short ch0[2560], unsigned short ch1[2560],
   int i;
   char s[MAX_STRING_LENGTH];
 
-  if (strncmp(config->mode, "surf", MAX_STRING_LENGTH) == 0) {
+  if (strncmp(config->pmt_serials[0], "none", MAX_STRING_LENGTH) != 0 &&
+      strncmp(config->pmt_serials[1], "none", MAX_STRING_LENGTH) != 0 && 
+      strncmp(config->pmt_serials[2], "none", MAX_STRING_LENGTH) != 0 && 
+      strncmp(config->pmt_serials[3], "none", MAX_STRING_LENGTH) != 0){
+    for (i = 40; i < 2560; i ++) {
+      sprintf(s, "%d %d %d %d %d\n", i-40, ch0[i], ch1[i], ch2[i], ch3[i]);
+      fwrite(s, 1, strlen(s), file);
+    }
+  }
+
+  else if(strncmp(config->pmt_serials[0], "none", MAX_STRING_LENGTH) != 0 &&
+          strncmp(config->pmt_serials[1], "none", MAX_STRING_LENGTH) != 0 && 
+          strncmp(config->pmt_serials[2], "none", MAX_STRING_LENGTH) != 0 &&
+          strncmp(config->pmt_serials[3], "none", MAX_STRING_LENGTH) == 0){
+    for (i = 40; i < 2560; i ++) {
+      sprintf(s, "%d %d %d %d\n", i-40, ch0[i], ch1[i], ch2[i]);
+      fwrite(s, 1, strlen(s), file);
+    }
+  }
+
+  else if(strncmp(config->pmt_serials[0], "none", MAX_STRING_LENGTH) != 0 &&
+          strncmp(config->pmt_serials[1], "none", MAX_STRING_LENGTH) != 0 && 
+          strncmp(config->pmt_serials[2], "none", MAX_STRING_LENGTH) == 0 &&
+          strncmp(config->pmt_serials[3], "none", MAX_STRING_LENGTH) == 0){
+    for (i = 40; i < 2560; i ++) {
+      sprintf(s, "%d %d %d\n", i-40, ch0[i], ch1[i]);
+      fwrite(s, 1, strlen(s), file);
+    }
+  }
+
+  else if(strncmp(config->pmt_serials[0], "none", MAX_STRING_LENGTH) != 0 &&
+          strncmp(config->pmt_serials[1], "none", MAX_STRING_LENGTH) == 0 && 
+          strncmp(config->pmt_serials[2], "none", MAX_STRING_LENGTH) == 0 &&
+          strncmp(config->pmt_serials[3], "none", MAX_STRING_LENGTH) == 0){
     for (i = 40; i < 2560; i ++) {
       sprintf(s, "%d %d\n", i-40, ch0[i]);
       fwrite(s, 1, strlen(s), file);
     }
-    return;
   }
 
-  if (config->num_channels_per_pulse == 1) { 
+  else {
+    printf("ERROR: All channels set to none! Nothing to read!");
+    exit(1);
+  }
+
+
+/* if (config->num_channels_per_pulse == 1) { 
     for (i = 40; i < 2560; i ++) {
-      sprintf(s, "%d %d %d %d %d\n", i-40, ch0[i],ch1[i],ch2[i],ch3[i]);
-      fwrite(s, 1, strlen(s), file);
+      sprintf(s, "%d %d %d %d %d\n", i-40, ch0[i],ch1[i],ch2[i],ch3[i]); fwrite(s, 1, strlen(s), file);
     }
   }
 
@@ -515,5 +552,5 @@ void save_data(unsigned short ch0[2560], unsigned short ch1[2560],
       fwrite(s, 1, strlen(s), file);
     }
   }
-  return;
+ Consider readding this to program later */
 }
