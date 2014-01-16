@@ -491,7 +491,7 @@ int main(int argc, char **argv) {
   FILE *conf_file;
   char data_filename[MAX_STRING_LENGTH]; 
   char conf_filename[MAX_STRING_LENGTH]; 
-  sprintf(conf_filename, "%s/%s_%05d_%s.conf", config.output_folder, config.mode, config.run_num, config.tag);
+  sprintf(conf_filename, "%s/%s_%05d_%s.conf", "/daq/conf", config.mode, config.run_num, config.tag);
 
   if (!doesFileExist(conf_filename))
   {
