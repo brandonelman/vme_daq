@@ -49,6 +49,11 @@ VME CRATE LAYOUT:
    * Base Address: 0x22000000
    * Leading Edge Discriminator 
   
- 5. General Purpose VME Board, V1495
+ 5. VME HV Power Supply Module, V6521
+   * Base Address: 0x32100000  
+   * 6 Channels Adjustable from +/- 6kV
+   * 100 mV resolution
+
+ 6. General Purpose VME Board, V1495
    * Base Address: 0xAAAA0000
     

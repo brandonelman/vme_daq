@@ -421,8 +421,6 @@ void save_config(Config * config, FILE * conf_file){
   fwrite(s, 1, strlen(s), conf_file);
   sprintf(s, "%-23s = %10d\n", "trigger-threshold-mv", config->trigger_threshold_mv);
   fwrite(s, 1, strlen(s), conf_file);
-  sprintf(s, "%-23s = %10u\n", "num-channels-per-pulse", config->num_channels_per_pulse);
-  fwrite(s, 1, strlen(s), conf_file);
   sprintf(s, "%-23s = %10u\n", "trigger-channel-src", config->trigger_channel_src);
   fwrite(s, 1, strlen(s), conf_file);
   sprintf(s, "%-23s = %10u\n", "trigger-type", config->trigger_type);
@@ -515,42 +513,4 @@ void save_data(unsigned short ch0[2560], unsigned short ch1[2560],
     printf("ERROR: All channels set to none! Nothing to read!");
     exit(1);
   }
-
-
-/* if (config->num_channels_per_pulse == 1) { 
-    for (i = 40; i < 2560; i ++) {
-      sprintf(s, "%d %d %d %d %d\n", i-40, ch0[i],ch1[i],ch2[i],ch3[i]); fwrite(s, 1, strlen(s), file);
-    }
-  }
-
-  if (config->num_channels_per_pulse == 2) {
-    for (i = 40; i < 2560; i ++) {
-        sprintf(s, "%d %d %d\n", i-40, ch0[i], ch2[i]);
-        fwrite(s, 1, strlen(s), file);
-      }
-    for (i = 40; i < 2560; i ++) {
-      sprintf(s, "%d %d %d\n", i-40+2560, ch1[i], ch3[i]);
-      fwrite(s, 1, strlen(s), file);
-    }
-  }
-  if (config->num_channels_per_pulse == 4) {
-    for (i = 40; i < 2560; i ++) {
-        sprintf(s, "%d %d\n", i-40, ch0[i]);
-        fwrite(s, 1, strlen(s), file);
-      }
-    for (i = 40; i < 2560; i ++) {
-      sprintf(s, "%d %d\n", i-40+2560,ch1[i]);
-      fwrite(s, 1, strlen(s), file);
-    }
-    for (i = 40; i < 2560; i ++) {
-      sprintf(s, "%d %d\n", i-40+(2*2560), ch2[i]);
-      fwrite(s, 1, strlen(s), file);
-    }
-
-    for (i = 40; i < 2560; i ++) {
-      sprintf(s, "%d %d\n", i-40+(3*2560), ch3[i]);
-      fwrite(s, 1, strlen(s), file);
-    }
-  }
- Consider readding this to program later */
 }

@@ -4,7 +4,6 @@
 
 //Parameter Defaults
 #define DTRIGGER_CHANNEL_SRC 15 
-#define DNUM_CHANNELS_PER_PULSE 1
 #define DTRIGGER_TYPE 2
 #define DTRIGGER_THRESHOLD_MV 300
 #define DNUM_PULSES 5000
@@ -115,7 +114,6 @@ void parseConfig(const char *fn, Config *config){
    }
    removeSpaces(line);
    strstrip(line);
-
    sscanf(line, "%s %s", paraF, paraV);  //Set element of struct corresponding to "para" to "value" 
 
    sprintf(paraN, "%s", "pmt-id-1");
@@ -158,11 +156,6 @@ void parseConfig(const char *fn, Config *config){
    sprintf(paraN, "%s", "trigger-type");
    if (strncmp(paraF, paraN, MAX_STRING_LENGTH) == 0){
      config->trigger_type = value;
-     continue;
-   }
-   sprintf(paraN, "%s", "num-channels-per-pulse");
-   if (strncmp(paraF, paraN, MAX_STRING_LENGTH) == 0){
-     config->num_channels_per_pulse = value;
      continue;
    }
    sprintf(paraN, "%s", "trigger-threshold-mv");
@@ -348,18 +341,7 @@ CVErrorCodes set_parameters (Config config) {
   // 1 channel (0x1) or 2 channels (0x2). Less channels means more sampling depth. 
   //ret = write_to_vme(V1729_NUMBER_OF_CHANNELS, 0x1); 
   //ret = write_to_vme(V1729_NUMBER_OF_CHANNELS, 0x2); 
-  //ret = write_to_vme(V1729_NUMBER_OF_CHANNELS, 0x4); 
-  switch(config.num_channels_per_pulse){ 
-    case (4):
-      ret = write_to_vme(V1729_NUMBER_OF_CHANNELS, 0x1); 
-      break;
-    case (2):
-      ret = write_to_vme(V1729_NUMBER_OF_CHANNELS, 0x2); 
-      break;
-    case (1):
-      ret = write_to_vme(V1729_NUMBER_OF_CHANNELS, 0x4); 
-      break;
-  }
+  ret = write_to_vme(V1729_NUMBER_OF_CHANNELS, 0x4); 
   if (ret != cvSuccess) {
     printf("Setting NUMBER_OF_CHANNELS failed with error %d \n", ret);
     return ret;
@@ -380,7 +362,6 @@ CVErrorCodes set_parameters (Config config) {
 
 void setDefaultConf(Config *config){
   config->trigger_channel_src = DTRIGGER_CHANNEL_SRC;
-  config->num_channels_per_pulse = DNUM_CHANNELS_PER_PULSE;
   config->trigger_type = DTRIGGER_TYPE;
   config->trigger_threshold_mv = DTRIGGER_THRESHOLD_MV;
   config->num_pulses = DNUM_PULSES;
@@ -440,7 +421,7 @@ int main(int argc, char **argv) {
   CVBoardTypes vme_board = cvV2718; 
   CVErrorCodes ret; // Error Codes for Debugging
 
-  setDefaultConf(&config);
+//setDefaultConf(&config);
   parseConfig(argv[argc-1], &config);
 
   int num_acquisitions = config.num_pulses; // Number of times to loop acquisition
@@ -448,7 +429,6 @@ int main(int argc, char **argv) {
   if(0){
   printf("\nACTUAL PARAMETERS\n");
   printf("TRIGGER_CHANNEL_SRC = %d\n", config.trigger_channel_src);
-  printf("NUM_CHANNELS_PER_PULSE = %d\n", config.num_channels_per_pulse); 
   printf("TRIGGER_TYPE = %d\n", config.trigger_type);
   printf("TRIGGER_THRESHOLD_MV = %d\n", config.trigger_threshold_mv);
   printf("NUM_PULSES = %d\n", config.num_pulses);
@@ -491,7 +471,8 @@ int main(int argc, char **argv) {
   FILE *conf_file;
   char data_filename[MAX_STRING_LENGTH]; 
   char conf_filename[MAX_STRING_LENGTH]; 
-  sprintf(conf_filename, "%s/%s_%05d_%s.conf", "/daq/conf", config.mode, config.run_num, config.tag);
+  sprintf(conf_filename, "%s/%s_%05d/%s_%05d_%s.conf", config.output_folder, 
+          config.mode, config.run_num, config.mode, config.run_num, config.tag);
 
   if (!doesFileExist(conf_filename))
   {
@@ -505,7 +486,8 @@ int main(int argc, char **argv) {
   }
   fclose(conf_file);
 
-  sprintf(data_filename, "%s/%s_%05d_%s.dat", config.output_folder, config.mode, config.run_num, config.tag);
+  sprintf(data_filename, "%s/%s_%05d/%s_%05d_%s.dat", config.output_folder,  
+          config.mode, config.run_num, config.mode, config.run_num, config.tag);
   data_file = fopen(data_filename, "w+b");
 
   //Create handle for interacting with VME Board
