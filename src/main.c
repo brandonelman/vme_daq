@@ -34,7 +34,7 @@
 #endif
 
 #include "V1729.h"
-#include "V812.h"
+#include "V6521M.h"
 #include "CAENVMElib.h"
 
 int32_t handle;
