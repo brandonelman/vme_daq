@@ -208,11 +208,36 @@ void parseConfig(const char *fn, Config *config){
      config->fp_frequency = value;
      continue;
    }
-   sprintf(paraN, "%s", "pmt-voltage");
+   sprintf(paraN, "%s", "pmt-voltages-0");
    if (strncmp(paraF, paraN, MAX_STRING_LENGTH) == 0){ 
-     config->pmt_voltage = value;
+     config->pmt_voltages[0] = value;
      continue;
    }
+   sprintf(paraN, "%s", "pmt-voltages-1");
+   if (strncmp(paraF, paraN, MAX_STRING_LENGTH) == 0){ 
+     config->pmt_voltages[1] = value;
+     continue;
+   }
+   sprintf(paraN, "%s", "pmt-voltages-2");
+   if (strncmp(paraF, paraN, MAX_STRING_LENGTH) == 0){ 
+     config->pmt_voltages[2] = value;
+     continue;
+   }   
+   sprintf(paraN, "%s", "pmt-voltages-3");
+   if (strncmp(paraF, paraN, MAX_STRING_LENGTH) == 0){ 
+     config->pmt_voltages[3] = value;
+     continue;
+   }   
+   sprintf(paraN, "%s", "pmt-voltages-4");
+   if (strncmp(paraF, paraN, MAX_STRING_LENGTH) == 0){ 
+     config->pmt_voltages[4] = value;
+     continue;
+   }   
+   sprintf(paraN, "%s", "pmt-voltages-5");
+   if (strncmp(paraF, paraN, MAX_STRING_LENGTH) == 0){ 
+     config->pmt_voltages[5] = value;
+     continue;
+   }  
    sprintf(paraN, "%s", "lamp-voltage");
    if (strncmp(paraF, paraN, MAX_STRING_LENGTH) == 0){ 
      config->lamp_voltage = value;
@@ -377,6 +402,7 @@ void setDefaultConf(Config *config){
   strncpy(config->pmt_serials[1], "none", MAX_STRING_LENGTH);
   strncpy(config->pmt_serials[2], "none", MAX_STRING_LENGTH);
   strncpy(config->pmt_serials[3], "none", MAX_STRING_LENGTH);
+
 }
 
 int doesFileExist(const char *filename) {

@@ -10,5 +10,11 @@ all: $(OBJS)
 lib/V1729.o: include/V1729.h  src/V1729.c
 	$(CC) $(CFLAGS)   -c src/V1729.c -o lib/V1729.o $(LIBS)
 
+volt_up: include/V6521M.h src/V6521M.c src/volt_up.c
+	$(CC) $(CFLAGS) src/volt_up.c src/V6521M.c -o bin/volt_up $(LIBS) 
+
+volt_down: include/V6521M.h src/V6521M.c src/volt_down.c
+	$(CC) $(CFLAGS) src/volt_down.c src/V6521M.c -o bin/volt_down $(LIBS) 
+
 clean:
 	rm -f bin/test $(OBJECTS)

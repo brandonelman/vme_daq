@@ -95,7 +95,7 @@ typedef struct Config{
   char tag[MAX_STRING_LENGTH];
   char output_folder[MAX_STRING_LENGTH];
   char pmt_serials[4][MAX_STRING_LENGTH];
-  uint32_t pmt_voltage;
+  uint32_t pmt_voltages[6];
   uint32_t lamp_voltage;
   uint32_t lamp_frequency;
 } Config;

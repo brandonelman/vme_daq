@@ -409,8 +409,9 @@ void save_config(Config * config, FILE * conf_file){
   char s[MAX_STRING_LENGTH];
   time_t t = time(NULL);
   struct tm tm = *localtime(&t);
-  sprintf(s, "#Date %4d-%02d-%02d Time %02d:%02d\n", tm.tm_year+1900, tm.tm_mon+1, 
-                                            tm.tm_mday, tm.tm_hour, tm.tm_min); 
+  sprintf(s, "#Date %4d-%02d-%02d Time %02d:%02d\n", tm.tm_year+1900, 
+                                                     tm.tm_mon+1, tm.tm_mday, 
+                                                     tm.tm_hour, tm.tm_min); 
   fwrite(s, 1, strlen(s), conf_file);
   sprintf(s, "#GIT VERSION %10s\n", VERSION);
   fwrite(s, 1, strlen(s), conf_file);
@@ -455,7 +456,17 @@ void save_config(Config * config, FILE * conf_file){
   fwrite(s, 1, strlen(s), conf_file);
   sprintf(s, "%-23s = %10s\n", "witness-id", config->pmt_serials[0]); 
   fwrite(s, 1, strlen(s), conf_file);
-  sprintf(s, "%-23s = %10u\n", "pmt-voltage", config->pmt_voltage);
+  sprintf(s, "%-23s = %10u\n", "pmt-voltages-0", config->pmt_voltages[0]);
+  fwrite(s, 1, strlen(s), conf_file);
+  sprintf(s, "%-23s = %10u\n", "pmt-voltages-1", config->pmt_voltages[1]);
+  fwrite(s, 1, strlen(s), conf_file);
+  sprintf(s, "%-23s = %10u\n", "pmt-voltages-2", config->pmt_voltages[2]);
+  fwrite(s, 1, strlen(s), conf_file);
+  sprintf(s, "%-23s = %10u\n", "pmt-voltages-3", config->pmt_voltages[3]);
+  fwrite(s, 1, strlen(s), conf_file);
+  sprintf(s, "%-23s = %10u\n", "pmt-voltages-4", config->pmt_voltages[4]);
+  fwrite(s, 1, strlen(s), conf_file);
+  sprintf(s, "%-23s = %10u\n", "pmt-voltages-5", config->pmt_voltages[5]);
   fwrite(s, 1, strlen(s), conf_file);
   sprintf(s, "%-23s = %10u\n", "lamp-voltage", config->lamp_voltage);
   fwrite(s, 1, strlen(s), conf_file);
