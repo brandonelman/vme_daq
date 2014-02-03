@@ -63,7 +63,7 @@ if __name__ == '__main__':
   #and any miscellaneous tags necessary for descriptiveness.
 
   mode = str(sys.argv[1]).lower()
-  tag = str(sys.argv[2]).lower()
+  tag = str(sys.argv[2])
   run_number = getRunNumber(mode)
   pmt_serials = []
   cfg_parsers = []
@@ -211,7 +211,7 @@ if __name__ == '__main__':
       i = i+1
     elif(fn == "spe.conf"):
       raw_input("Press enter when PMT is prepared for s.p.e. testing")
-      tmp_tag = "{}_{}".format(tag, "spe")
+      tmp_tag = "{}_{}".format(tag, "SPE")
     elif(fn == "gain.conf"):
       raw_input("Press enter when PMT is prepared for gain testing")
       tmp_tag = "{}_{}".format(tag, "gain")

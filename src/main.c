@@ -452,7 +452,7 @@ int main(int argc, char **argv) {
 
   int num_acquisitions = config.num_pulses; // Number of times to loop acquisition
 
-  if(0){
+  if(1){
   printf("\nACTUAL PARAMETERS\n");
   printf("TRIGGER_CHANNEL_SRC = %d\n", config.trigger_channel_src);
   printf("TRIGGER_TYPE = %d\n", config.trigger_type);
