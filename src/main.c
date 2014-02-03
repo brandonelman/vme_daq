@@ -134,7 +134,7 @@ void parseConfig(const char *fn, Config *config){
      continue;
    }
 
-   sprintf(paraN, "%s", "witness-id");
+   sprintf(paraN, "%s", "pmt-id-0");
    if (strncmp(paraF, paraN, MAX_STRING_LENGTH) == 0){
      strncpy(config->pmt_serials[0], paraV, MAX_STRING_LENGTH); 
      continue;

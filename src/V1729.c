@@ -448,13 +448,13 @@ void save_config(Config * config, FILE * conf_file){
 
   sprintf(s, "%s\n","[Hardware]"); //Contains all DAQ info
   fwrite(s, 1, strlen(s), conf_file);
+  sprintf(s, "%-23s = %10s\n", "pmt-id-0", config->pmt_serials[0]); 
+  fwrite(s, 1, strlen(s), conf_file);
   sprintf(s, "%-23s = %10s\n", "pmt-id-1", config->pmt_serials[1]);
   fwrite(s, 1, strlen(s), conf_file);
   sprintf(s, "%-23s = %10s\n", "pmt-id-2", config->pmt_serials[2]);
   fwrite(s, 1, strlen(s), conf_file);
   sprintf(s, "%-23s = %10s\n", "pmt-id-3", config->pmt_serials[3]);
-  fwrite(s, 1, strlen(s), conf_file);
-  sprintf(s, "%-23s = %10s\n", "witness-id", config->pmt_serials[0]); 
   fwrite(s, 1, strlen(s), conf_file);
   sprintf(s, "%-23s = %10u\n", "pmt-voltages-0", config->pmt_voltages[0]);
   fwrite(s, 1, strlen(s), conf_file);

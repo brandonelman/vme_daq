@@ -39,10 +39,10 @@ def getRunNumber(mode):
   output = ""
   if(mode == 'run'):
     status, output = getstatusoutput("ls /daq/prod | grep run | wc -l")
-    output = int(output)/2 #Takes into account both gain and spe tests
+    output = int(output) 
   elif(mode == 'surf'):
     status, output = getstatusoutput("ls /daq/prod | grep surf | wc -l")
-    output = int(output)/4
+    output = int(output)
   elif(mode == 'misc'):
     status, output = getstatusoutput("ls /daq/test | grep misc | wc -l")
     output = int(output)
@@ -97,50 +97,67 @@ if __name__ == '__main__':
     if exception.errno != errno.EEXIST:
       raise
 
-  pmt_serials.append(cfg_parsers[0].get('Hardware', 'witness-id'))
-  for i in range(1, 4):
+  for i in range(4):
     pmt_serials.append(cfg_parsers[0].get('Hardware', 'pmt-id-{}'.format(i)))
   for i in range(6):
     pmt_voltages[i] = cfg_parsers[0].get('Hardware', 'pmt-voltages-{}'.format(i))
+  num_pulses = int(cfg_parsers[0].get('VME', 'num-pulses'))
   #Get Hardware Info for each Run
 
+
+  print "Current expected number of pulses is {}.".format(num_pulses)
+  print "If correct, press enter. Otherwise, enter correct number of pulses."
+  input = raw_input('-->')
+  if (input != ''):
+    num_pulses = int(input)
+  
   print "Current PMT Serial for Channel 0 is {}.".format(pmt_serials[0])
   print "If correct, press enter. Otherwise, enter correct serial."
   input = raw_input('-->')
   if (input != ''):
     pmt_serials[0] = input
-
-  input = raw_input("Enter voltage for PMT in channel 0 (HV Ch 0)(default: {})".format(pmt_voltages[0]))
-  if (input != ''):
-    pmt_voltages[0] = int(input)
+  if ("{}".format(pmt_serials[0]) != 'none'):
+    input = raw_input("Enter voltage for PMT in channel 0 (HV Ch 0)(default: {})".format(pmt_voltages[0]))
+    if (input != ''):
+      pmt_voltages[0] = int(input)
+  else:
+    pmt_voltages[0] = 0
 
   print "Current PMT Serial for Channel 1 is {}.".format(pmt_serials[1])
   print "If correct, press enter. Otherwise, enter correct serial."
   input = raw_input('-->')
   if (input != ''):
     pmt_serials[1] = input
-
-  input = raw_input("Enter voltage for PMT in channel 1 (HV Ch 3)(default: {})".format(pmt_voltages[3]))
-  if (input != ''):
-    pmt_voltages[3] = int(input)
+  if ("{}".format(pmt_serials[1]) != 'none'):
+    input = raw_input("Enter voltage for PMT in channel 1 (HV Ch 3)(default: {})".format(pmt_voltages[3]))
+    if (input != ''):
+      pmt_voltages[3] = int(input)
+  else:
+    pmt_voltages[3] = 0
 
   print "Current PMT Serial for Channel 2 is {}.".format(pmt_serials[2])
   print "If correct, press enter. Otherwise, enter correct serial."
   input = raw_input('-->')
   if (input != ''):
     pmt_serials[2] = input
-  input = raw_input("Enter voltage for PMT in channel 2 (HV Ch 4)(default: {})".format(pmt_voltages[4]))
-  if (input != ''):
-    pmt_voltages[4] = int(input)
+  if ("{}".format(pmt_serials[2]) != 'none'):
+    input = raw_input("Enter voltage for PMT in channel 2 (HV Ch 4)(default: {})".format(pmt_voltages[4]))
+    if (input != ''):
+      pmt_voltages[4] = int(input)
+  else:
+    pmt_voltages[4] = 0
 
   print "Current PMT Serial for Channel 3 is {}.".format(pmt_serials[3])
   print "If correct, press enter. Otherwise, enter correct serial."
   input = raw_input('-->')
   if (input != ''):
     pmt_serials[3] = input
-  input = raw_input("Enter voltage for PMT in channel 3 (HV Ch 5)(default: {})".format(pmt_voltages[5]))
-  if (input != ''):
-    pmt_voltages[5] = int(input)
+  if ("{}".format(pmt_serials[3]) != 'none'):
+    input = raw_input("Enter voltage for PMT in channel 3 (HV Ch 5)(default: {})".format(pmt_voltages[5]))
+    if (input != ''):
+      pmt_voltages[5] = int(input)
+  else:
+    pmt_voltages[5] = 0
 
   ####
   #Add more hardware settings here later
@@ -151,10 +168,9 @@ if __name__ == '__main__':
   for cfg_parser in cfg_parsers:
     for i in range(6):
       cfg_parser.set('Hardware', 'pmt-voltages-{}'.format(i), str(pmt_voltages[i]))
-
-    cfg_parser.set('Hardware', 'witness-id', str(pmt_serials[0]))
-    for i in range(1, 4):
+    for i in range(4):
       cfg_parser.set('Hardware', 'pmt-id-{}'.format(i), str(pmt_serials[i]))
+    cfg_parser.set('VME', 'num-pulses', str(num_pulses))
 
   #Save config files to temp folder for temporary storage before running
   if (mode == 'run' or mode == 'misc'): 
