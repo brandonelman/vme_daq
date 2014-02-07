@@ -424,10 +424,10 @@ int main(int argc, char **argv) {
   //int bad_read = 0;
   if (argc < 5){
     printf("USAGE: ./bin/daq -r [RUN_NUM] -m [MODE_NAME] -t [TAG]  [CONFIG_FILE_NAME]\n");
-    printf("e.g. ./bin/daq -r 1000 -t pre_gain -m run config.conf \n");
+    printf("e.g. ./bin/daq -r 1000 -t pre -m gain config.conf \n");
     printf("This produces a readout based on the parameters in the config file\n"); 
-    printf("Mode options: run, surf, misc\n");
-    printf("Tag options: pre_gain, post_gain, pre_spe, post_spe, ang0, ang90, ang180, ang270\n");
+    printf("Mode options: gain, spe, surf, misc\n");
+    printf("Tag options: pre, post, ang0, ang90, ang180, ang270\n");
     exit(1);
   }
 
@@ -463,7 +463,7 @@ int main(int argc, char **argv) {
   CVBoardTypes vme_board = cvV2718; 
   CVErrorCodes ret; // Error Codes for Debugging
 
-  setDefaultConf(&config);
+  //setDefaultConf(&config);
   parseConfig(argv[argc-1], &config);
 
   int num_acquisitions = config.num_pulses; // Number of times to loop acquisition
@@ -516,8 +516,11 @@ int main(int argc, char **argv) {
   char data_filename2[MAX_STRING_LENGTH]; 
   char data_filename3[MAX_STRING_LENGTH]; 
   char conf_filename[MAX_STRING_LENGTH]; 
+
   sprintf(conf_filename, "%s/%s_%05d/%s_%05d_%s.conf", config.output_folder, 
           config.mode, config.run_num, config.mode, config.run_num, config.tag);
+
+  printf("New configuration filename: %s\n", conf_filename);
 
   if (!doesFileExist(conf_filename))
   {

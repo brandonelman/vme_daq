@@ -40,14 +40,14 @@ def getRunNumber(mode):
   if(mode == 'spe'):
     status, output = getstatusoutput("ls /daq/prod | grep spe | wc -l")
     output = int(output) 
-  if(mode == 'gain'):
+  elif(mode == 'gain'):
     status, output = getstatusoutput("ls /daq/prod | grep gain | wc -l")
     output = int(output) 
   elif(mode == 'surf'):
     status, output = getstatusoutput("ls /daq/prod | grep surf | wc -l")
     output = int(output)
   elif(mode == 'misc'):
-    status, output = getstatusoutput("ls /daq/test | grep misc | wc -l")
+    status, output = getstatusoutput("ls /daq/misc | grep misc | wc -l")
     output = int(output)
   else:
     print "Invalid mode {} for getting run number".format(mode)
@@ -78,7 +78,7 @@ if __name__ == '__main__':
   if (mode == 'gain'):
     cfg_parser = getConfig("{}/gain.conf".format(MASTER_CONFIG_LOC))
     tmp_files.append(open("{}/gain.conf".format(TMP_DIR), 'w'))
-  if (mode == 'spe'):
+  elif (mode == 'spe'):
     cfg_parser = getConfig("{}/spe.conf".format(MASTER_CONFIG_LOC))
     tmp_files.append(open("{}/spe.conf".format(TMP_DIR), 'w'))
   elif (mode == 'surf'):
@@ -211,18 +211,16 @@ if __name__ == '__main__':
       i = i+1
     elif(fn == "spe.conf"):
       raw_input("Press enter when PMT is prepared for s.p.e. testing")
-      tmp_tag = "{}_{}".format(tag, "SPE")
     elif(fn == "gain.conf"):
       raw_input("Press enter when PMT is prepared for gain testing")
-      tmp_tag = "{}_{}".format(tag, "gain")
-    print "{} -r {} -t {} -m {} {}/{}".format(DAQ_BIN, run_number, tmp_tag, mode, TMP_DIR, fn) 
     if (integrate):
+      print "{} -r {} -t {} -m {} --integrate {}/{}".format(DAQ_BIN, run_number, tmp_tag, mode, TMP_DIR, fn) 
       os.system("{} -r {} -t {} -m {} --integrate {}/{}".format(DAQ_BIN, run_number, tmp_tag, mode, TMP_DIR, fn)) 
     else:
+      print "{} -r {} -t {} -m {} {}/{}".format(DAQ_BIN, run_number, tmp_tag, mode, TMP_DIR, fn) 
       os.system("{} -r {} -t {} -m {} {}/{}".format(DAQ_BIN, run_number, tmp_tag, mode, TMP_DIR, fn)) 
     #Remove tmp file after run
-    os.system("rm {}/{}".format(TMP_DIR, fn)) 
+    #os.system("rm {}/{}".format(TMP_DIR, fn)) 
   input = raw_input("Runs completed. Would you like to turn off voltage? [y/n]")
   if (input.lower() == 'y'): 
     os.system("{}".format(VOLT_DOWN_BIN))
-#   call(["./foo"]) #Insert production code here
