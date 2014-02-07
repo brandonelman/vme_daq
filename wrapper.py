@@ -220,7 +220,7 @@ if __name__ == '__main__':
       print "{} -r {} -t {} -m {} {}/{}".format(DAQ_BIN, run_number, tmp_tag, mode, TMP_DIR, fn) 
       os.system("{} -r {} -t {} -m {} {}/{}".format(DAQ_BIN, run_number, tmp_tag, mode, TMP_DIR, fn)) 
     #Remove tmp file after run
-    #os.system("rm {}/{}".format(TMP_DIR, fn)) 
+    os.system("rm {}/{}".format(TMP_DIR, fn)) 
   input = raw_input("Runs completed. Would you like to turn off voltage? [y/n]")
   if (input.lower() == 'y'): 
     os.system("{}".format(VOLT_DOWN_BIN))
