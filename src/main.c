@@ -146,6 +146,11 @@ void parseConfig(const char *fn, Config *config){
      continue;
    }
 
+   sprintf(paraN, "%s", "descriptor");
+   if (strncmp(paraF, paraN, MAX_STRING_LENGTH) == 0){
+     strncpy(config->descriptor, paraV, MAX_STRING_LENGTH); 
+     continue;
+   }
 
    value = atoi(paraV); //All other values are integers rather than strings 
    sprintf(paraN, "%s", "trigger-channel-src");
@@ -402,7 +407,10 @@ void setDefaultConf(Config *config){
   strncpy(config->pmt_serials[1], "none", MAX_STRING_LENGTH);
   strncpy(config->pmt_serials[2], "none", MAX_STRING_LENGTH);
   strncpy(config->pmt_serials[3], "none", MAX_STRING_LENGTH);
-
+  strncpy(config->descriptor, "none", MAX_STRING_LENGTH);
+  strncpy(config->tag, "none", MAX_STRING_LENGTH);
+  strncpy(config->mode, "misc", MAX_STRING_LENGTH);
+  strncpy(config->output_folder, "/daq/misc", MAX_STRING_LENGTH);
 }
 
 int doesFileExist(const char *filename) {
@@ -424,6 +432,7 @@ int main(int argc, char **argv) {
   }
 
   Config config;
+  int integrate = 0;
   int i;
   for (i = 1; i < argc; i++) {
     if(strncmp(argv[i], "-r", MAX_STRING_LENGTH) == 0){
@@ -443,11 +452,18 @@ int main(int argc, char **argv) {
       i += 1; 
       continue;
     }
+
+    if(strncmp(argv[i], "--integrate", MAX_STRING_LENGTH) == 0) {
+      integrate = 1;
+      continue;
+    }
+
+
   }
   CVBoardTypes vme_board = cvV2718; 
   CVErrorCodes ret; // Error Codes for Debugging
 
-//setDefaultConf(&config);
+  setDefaultConf(&config);
   parseConfig(argv[argc-1], &config);
 
   int num_acquisitions = config.num_pulses; // Number of times to loop acquisition
@@ -493,9 +509,12 @@ int main(int argc, char **argv) {
   float mean_pedestal[4];
   unsigned int MAXVER[4], MINVER[4]; // MAXVER -> 1/pilot_frequency
                                      // MINVER -> Zero of the vernier
-  FILE *data_file;
+  FILE *data_files[4];
   FILE *conf_file;
-  char data_filename[MAX_STRING_LENGTH]; 
+  char data_filename0[MAX_STRING_LENGTH]; 
+  char data_filename1[MAX_STRING_LENGTH]; 
+  char data_filename2[MAX_STRING_LENGTH]; 
+  char data_filename3[MAX_STRING_LENGTH]; 
   char conf_filename[MAX_STRING_LENGTH]; 
   sprintf(conf_filename, "%s/%s_%05d/%s_%05d_%s.conf", config.output_folder, 
           config.mode, config.run_num, config.mode, config.run_num, config.tag);
@@ -512,9 +531,21 @@ int main(int argc, char **argv) {
   }
   fclose(conf_file);
 
-  sprintf(data_filename, "%s/%s_%05d/%s_%05d_%s.dat", config.output_folder,  
+  sprintf(data_filename0, "%s/%s_%05d/%s_%05d_%s_pmt0.dat", config.output_folder,  
           config.mode, config.run_num, config.mode, config.run_num, config.tag);
-  data_file = fopen(data_filename, "w+b");
+  data_files[0] = fopen(data_filename0, "w+b");
+
+  sprintf(data_filename1, "%s/%s_%05d/%s_%05d_%s_pmt1.dat", config.output_folder,  
+          config.mode, config.run_num, config.mode, config.run_num, config.tag);
+  data_files[1] = fopen(data_filename1, "w+b");
+
+  sprintf(data_filename2, "%s/%s_%05d/%s_%05d_%s_pmt2.dat", config.output_folder,  
+          config.mode, config.run_num, config.mode, config.run_num, config.tag);
+  data_files[2] = fopen(data_filename2, "w+b");
+
+  sprintf(data_filename3, "%s/%s_%05d/%s_%05d_%s_pmt3.dat", config.output_folder,  
+          config.mode, config.run_num, config.mode, config.run_num, config.tag);
+  data_files[3] = fopen(data_filename3, "w+b");
 
   //Create handle for interacting with VME Board
   ret = CAENVME_Init(vme_board, 0, 0, &handle);
@@ -610,10 +641,15 @@ int main(int argc, char **argv) {
             buffer16, ch0, ch1, ch2, ch3);
       
     //Save to ASCII File
-    save_data(ch0, ch1, ch2, ch3, &config, data_file);
+    if (save_data(ch0, ch1, ch2, ch3, &config, data_files, integrate) == 1) {
+      interrupts--;
+      printf("Warning overflow detected! Pulse ignored!");
+    }
   }
   
-  fclose(data_file);
+  for (i = 0; i < 4; i ++){
+    fclose(data_files[i]);
+  }
   CAENVME_End(handle);
   printf("Closing board post-acquisition...\n ");
   return 0;

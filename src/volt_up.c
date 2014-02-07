@@ -1,5 +1,5 @@
 #include "V6521M.h"
-
+#define CURRENT 20
 int main(int argc, char *argv[]){
   
   if (argc < 6) {
@@ -51,6 +51,13 @@ int main(int argc, char *argv[]){
     ret = set_ramp_up(ch, RAMP_SPEED);
     if (ret  != cvSuccess) {
       printf("Error %d when Setting RAMP_UP rate!\n", ret);
+      CAENVME_End(handle);
+      return 1;
+    }
+
+    ret = set_current(ch, CURRENT);
+    if (ret  != cvSuccess) {
+      printf("Error %d when Setting current!\n", ret);
       CAENVME_End(handle);
       return 1;
     }

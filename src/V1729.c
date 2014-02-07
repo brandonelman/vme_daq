@@ -474,54 +474,145 @@ void save_config(Config * config, FILE * conf_file){
   fwrite(s, 1, strlen(s), conf_file);
 }
 
-void save_data(unsigned short ch0[2560], unsigned short ch1[2560], 
-         unsigned short ch2[2560], unsigned short ch3[2560], 
-         Config *config, FILE *file){
+int save_data(unsigned short ch0[2560], unsigned short ch1[2560], 
+              unsigned short ch2[2560], unsigned short ch3[2560], 
+              Config *config, FILE *files[], int integrate){
   int i;
   char s[MAX_STRING_LENGTH];
+  int sum[4] = {0,0,0,0};
+
+  if (ch0[0] == LOW_OF_CUT || ch1[0] == LOW_OF_CUT || ch2[0] == LOW_OF_CUT || 
+      ch3[0] == LOW_OF_CUT || ch0[0] > HIGH_OF_CUT || ch1[0] > HIGH_OF_CUT || 
+      ch2[0] > HIGH_OF_CUT || ch3[0] > HIGH_OF_CUT)
+    return 1;
 
   if (strncmp(config->pmt_serials[0], "none", MAX_STRING_LENGTH) != 0 &&
       strncmp(config->pmt_serials[1], "none", MAX_STRING_LENGTH) != 0 && 
       strncmp(config->pmt_serials[2], "none", MAX_STRING_LENGTH) != 0 && 
       strncmp(config->pmt_serials[3], "none", MAX_STRING_LENGTH) != 0){
-    for (i = 40; i < 2560; i ++) {
-      sprintf(s, "%d %d %d %d %d\n", i-40, ch0[i], ch1[i], ch2[i], ch3[i]);
-      fwrite(s, 1, strlen(s), file);
-    }
+
+    if (integrate){
+      for (i = 40; i < 2560; i++){
+        if (ch0[i] >= LOW_OF_CUT && ch0[i] < HIGH_OF_CUT)
+          sum[0] += ch0[i];
+        else 
+          return 1;
+        if (ch1[i] >= LOW_OF_CUT && ch1[i] < HIGH_OF_CUT)
+          sum[1] += ch1[i];
+        else 
+          return 1;
+        if (ch2[i] >= LOW_OF_CUT && ch2[i] < HIGH_OF_CUT)
+          sum[2] += ch2[i];
+        else 
+          return 1;
+        if (ch3[i] >= LOW_OF_CUT && ch3[i] < HIGH_OF_CUT)
+          sum[3] += ch3[i];
+        else 
+          return 1;
+      }
+      sprintf(s, "%d", sum[0]);
+      fwrite(s, 1, strlen(s), files[0]);
+      sprintf(s, "%d", sum[1]);
+      fwrite(s, 1, strlen(s), files[1]);
+      sprintf(s, "%d", sum[2]);
+      fwrite(s, 1, strlen(s), files[2]);
+      sprintf(s, "%d", sum[3]);
+      fwrite(s, 1, strlen(s), files[3]);
+   }
+   else {
+     for (i = 40; i < 2560; i++) {
+       sprintf(s, "%d %d %d %d %d\n", i-40, ch0[i], ch1[i], ch2[i], ch3[i]);
+       fwrite(s, 1, strlen(s), files[0]);
+     }
+   }
   }
 
   else if(strncmp(config->pmt_serials[0], "none", MAX_STRING_LENGTH) != 0 &&
           strncmp(config->pmt_serials[1], "none", MAX_STRING_LENGTH) != 0 && 
           strncmp(config->pmt_serials[2], "none", MAX_STRING_LENGTH) != 0 &&
           strncmp(config->pmt_serials[3], "none", MAX_STRING_LENGTH) == 0){
-    for (i = 40; i < 2560; i ++) {
-      sprintf(s, "%d %d %d %d\n", i-40, ch0[i], ch1[i], ch2[i]);
-      fwrite(s, 1, strlen(s), file);
+
+    if (integrate){
+      for (i = 40; i < 2560; i++){
+        if (ch0[i] >= LOW_OF_CUT && ch0[i] < HIGH_OF_CUT)
+          sum[0] += ch0[i];
+        else 
+          return 1;
+        if (ch1[i] >= LOW_OF_CUT && ch1[i] < HIGH_OF_CUT)
+          sum[1] += ch1[i];
+        else 
+          return 1;
+        if (ch2[i] >= LOW_OF_CUT && ch2[i] < HIGH_OF_CUT)
+          sum[2] += ch2[i];
+        else 
+          return 1;
+      }
+      sprintf(s, "%d", sum[0]);
+      fwrite(s, 1, strlen(s), files[0]);
+      sprintf(s, "%d", sum[1]);
+      fwrite(s, 1, strlen(s), files[1]);
+      sprintf(s, "%d", sum[2]);
+      fwrite(s, 1, strlen(s), files[2]);
+    }
+    else {
+      for (i = 40; i < 2560; i++) {
+        sprintf(s, "%d %d %d %d\n", i-40, ch0[i], ch1[i], ch2[i]);
+        fwrite(s, 1, strlen(s), files[0]);
+      }
     }
   }
-
   else if(strncmp(config->pmt_serials[0], "none", MAX_STRING_LENGTH) != 0 &&
           strncmp(config->pmt_serials[1], "none", MAX_STRING_LENGTH) != 0 && 
           strncmp(config->pmt_serials[2], "none", MAX_STRING_LENGTH) == 0 &&
           strncmp(config->pmt_serials[3], "none", MAX_STRING_LENGTH) == 0){
-    for (i = 40; i < 2560; i ++) {
-      sprintf(s, "%d %d %d\n", i-40, ch0[i], ch1[i]);
-      fwrite(s, 1, strlen(s), file);
+    if (integrate){
+      for (i = 40; i < 2560; i++){
+        if (ch0[i] >= LOW_OF_CUT && ch0[i] < HIGH_OF_CUT)
+          sum[0] += ch0[i];
+        else 
+          return 1;
+        if (ch1[i] >= LOW_OF_CUT && ch1[i] < HIGH_OF_CUT)
+          sum[1] += ch1[i];
+        else 
+          return 1;
+      }
+      sprintf(s, "%d", sum[0]);
+      fwrite(s, 1, strlen(s), files[0]);
+      sprintf(s, "%d", sum[1]);
+      fwrite(s, 1, strlen(s), files[1]);
+    }
+    else {
+      for (i = 40; i < 2560; i++) {
+        sprintf(s, "%d %d %d\n", i-40, ch0[i], ch1[i]);
+        fwrite(s, 1, strlen(s), files[0]);
+      }
     }
   }
-
   else if(strncmp(config->pmt_serials[0], "none", MAX_STRING_LENGTH) != 0 &&
           strncmp(config->pmt_serials[1], "none", MAX_STRING_LENGTH) == 0 && 
           strncmp(config->pmt_serials[2], "none", MAX_STRING_LENGTH) == 0 &&
           strncmp(config->pmt_serials[3], "none", MAX_STRING_LENGTH) == 0){
-    for (i = 40; i < 2560; i ++) {
-      sprintf(s, "%d %d\n", i-40, ch0[i]);
-      fwrite(s, 1, strlen(s), file);
+    if (integrate){
+      for (i = 40; i < 2560; i++){
+        if (ch0[i] >= LOW_OF_CUT && ch0[i] < HIGH_OF_CUT)
+          sum[0] += ch0[i];
+        else 
+          return 1;
+      }
+      sprintf(s, "%d", sum[0]);
+      fwrite(s, 1, strlen(s), files[0]);
+    }
+    else {
+      for (i = 40; i < 2560; i++) {
+        sprintf(s, "%d %d\n", i-40, ch0[i]);
+        fwrite(s, 1, strlen(s), files[0]);
+      }
     }
   }
-
   else {
     printf("ERROR: All channels set to none! Nothing to read!");
     exit(1);
   }
-}
+  return 0;
+} 
+

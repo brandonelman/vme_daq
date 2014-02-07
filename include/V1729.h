@@ -64,6 +64,8 @@
 #define V1729_NOS 2560
 #define V1729_VERNIER_DEPH 65536
 #define MAX_STRING_LENGTH 50
+#define HIGH_OF_CUT 16384
+#define LOW_OF_CUT 0
 
 #include "CAENVMElib.h"
 /************************************
@@ -95,6 +97,7 @@ typedef struct Config{
   char tag[MAX_STRING_LENGTH];
   char output_folder[MAX_STRING_LENGTH];
   char pmt_serials[4][MAX_STRING_LENGTH];
+  char descriptor[MAX_STRING_LENGTH];
   uint32_t pmt_voltages[6];
   uint32_t lamp_voltage;
   uint32_t lamp_frequency;
@@ -251,9 +254,9 @@ Parameters:
           settings. 
   file: File to save config information to. 
 */
-void save_data(unsigned short ch0[2560], unsigned short ch1[2560], 
+int save_data(unsigned short ch0[2560], unsigned short ch1[2560], 
               unsigned short ch2[2560], unsigned short ch3[2560], 
-              Config * config, FILE *file); 
+              Config * config, FILE *files[], int integrate); 
 /* Function: save_data
  ----------------------
 Purpose: Saves DAQ data output to file. Note that there are numerous different

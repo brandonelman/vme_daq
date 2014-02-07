@@ -37,8 +37,11 @@ def getRunNumber(mode):
   mode = mode.lower()
   status = 0
   output = ""
-  if(mode == 'run'):
-    status, output = getstatusoutput("ls /daq/prod | grep run | wc -l")
+  if(mode == 'spe'):
+    status, output = getstatusoutput("ls /daq/prod | grep spe | wc -l")
+    output = int(output) 
+  if(mode == 'gain'):
+    status, output = getstatusoutput("ls /daq/prod | grep gain | wc -l")
     output = int(output) 
   elif(mode == 'surf'):
     status, output = getstatusoutput("ls /daq/prod | grep surf | wc -l")
@@ -52,7 +55,7 @@ def getRunNumber(mode):
   return output
 
 if __name__ == '__main__':
-  usage = "wrapper.py [RUN_MODE (run, surf, misc)] [TAG (pre,post,,etc)]"
+  usage = "wrapper.py [RUN_MODE (run, surf, misc)] [TAG (pre,post,,etc)] [INTEGRATE, 0 (false) or 1 (true)]"
 
   if (len(sys.argv) < 3):
     print usage
@@ -61,34 +64,37 @@ if __name__ == '__main__':
   #misc is for everything else, while tag is the suffix on the created file name
   #for indexing purposes. Some possible tags are pre and post for all run modes, 
   #and any miscellaneous tags necessary for descriptiveness.
-
+  integrate = 0
   mode = str(sys.argv[1]).lower()
   tag = str(sys.argv[2])
+  if (len(sys.argv) > 3):
+    integrate = int(sys.argv[3])
   run_number = getRunNumber(mode)
   pmt_serials = []
-  cfg_parsers = []
+  cfg_parser = 0
   tmp_files = []
   pmt_voltages = [0,0,0,0,0,0]
   #Open Master config files based on mode
-  if (mode == 'run'):
-    cfg_parsers.append(getConfig("{}/gain.conf".format(MASTER_CONFIG_LOC)))
-    cfg_parsers.append(getConfig("{}/spe.conf".format(MASTER_CONFIG_LOC)))
+  if (mode == 'gain'):
+    cfg_parser = getConfig("{}/gain.conf".format(MASTER_CONFIG_LOC))
     tmp_files.append(open("{}/gain.conf".format(TMP_DIR), 'w'))
+  if (mode == 'spe'):
+    cfg_parser = getConfig("{}/spe.conf".format(MASTER_CONFIG_LOC))
     tmp_files.append(open("{}/spe.conf".format(TMP_DIR), 'w'))
   elif (mode == 'surf'):
-    cfg_parsers.append(getConfig("{}/surf.conf".format(MASTER_CONFIG_LOC)))
+    cfg_parser = getConfig("{}/surf.conf".format(MASTER_CONFIG_LOC))
     tmp_files.append(open("{}/surf_ang000.conf".format(TMP_DIR), 'w'))
     tmp_files.append(open("{}/surf_ang090.conf".format(TMP_DIR), 'w'))
     tmp_files.append(open("{}/surf_ang180.conf".format(TMP_DIR), 'w'))
     tmp_files.append(open("{}/surf_ang270.conf".format(TMP_DIR), 'w'))
   elif (mode == 'misc'):
-    cfg_parsers.append(getConfig("{}/misc.conf".format(MASTER_CONFIG_LOC)))
+    cfg_parser = getConfig("{}/misc.conf".format(MASTER_CONFIG_LOC))
     tmp_files.append(open("{}/misc.conf".format(TMP_DIR), 'w'))
   else:
     print "Invalid mode: {}".format(mode)
     sys.exit(1)
 
-  output_folder = cfg_parsers[0].get('VME', 'output-folder')
+  output_folder = cfg_parser.get('VME', 'output-folder')
 
   try:
     if not os.path.isdir("{0}/{1}_{2:05d}".format(output_folder, mode, run_number)):
@@ -98,10 +104,10 @@ if __name__ == '__main__':
       raise
 
   for i in range(4):
-    pmt_serials.append(cfg_parsers[0].get('Hardware', 'pmt-id-{}'.format(i)))
+    pmt_serials.append(cfg_parser.get('Hardware', 'pmt-id-{}'.format(i)))
   for i in range(6):
-    pmt_voltages[i] = cfg_parsers[0].get('Hardware', 'pmt-voltages-{}'.format(i))
-  num_pulses = int(cfg_parsers[0].get('VME', 'num-pulses'))
+    pmt_voltages[i] = cfg_parser.get('Hardware', 'pmt-voltages-{}'.format(i))
+  num_pulses = int(cfg_parser.get('VME', 'num-pulses'))
   #Get Hardware Info for each Run
 
 
@@ -165,22 +171,16 @@ if __name__ == '__main__':
 
   
   #Set hardware values in config files
-  for cfg_parser in cfg_parsers:
-    for i in range(6):
-      cfg_parser.set('Hardware', 'pmt-voltages-{}'.format(i), str(pmt_voltages[i]))
-    for i in range(4):
-      cfg_parser.set('Hardware', 'pmt-id-{}'.format(i), str(pmt_serials[i]))
-    cfg_parser.set('VME', 'num-pulses', str(num_pulses))
+  for i in range(6):
+    cfg_parser.set('Hardware', 'pmt-voltages-{}'.format(i), str(pmt_voltages[i]))
+  for i in range(4):
+    cfg_parser.set('Hardware', 'pmt-id-{}'.format(i), str(pmt_serials[i]))
+  cfg_parser.set('VME', 'num-pulses', str(num_pulses))
 
   #Save config files to temp folder for temporary storage before running
-  if (mode == 'run' or mode == 'misc'): 
-    for i in range(len(tmp_files)):
-      cfg_parsers[i].write(tmp_files[i]) 
-      tmp_files[i].close()
-  elif (mode == 'surf'):
-    for i in range(len(tmp_files)):
-      cfg_parsers[0].write(tmp_files[i]) 
-      tmp_files[i].close()
+  for i in range(len(tmp_files)):
+    cfg_parser.write(tmp_files[i]) 
+    tmp_files[i].close()
 
   input = raw_input("Turn on voltage? [y/n].")
   if (input.lower() == 'y'):
@@ -216,7 +216,10 @@ if __name__ == '__main__':
       raw_input("Press enter when PMT is prepared for gain testing")
       tmp_tag = "{}_{}".format(tag, "gain")
     print "{} -r {} -t {} -m {} {}/{}".format(DAQ_BIN, run_number, tmp_tag, mode, TMP_DIR, fn) 
-    os.system("{} -r {} -t {} -m {} {}/{}".format(DAQ_BIN, run_number, tmp_tag, mode, TMP_DIR, fn)) 
+    if (integrate):
+      os.system("{} -r {} -t {} -m {} --integrate {}/{}".format(DAQ_BIN, run_number, tmp_tag, mode, TMP_DIR, fn)) 
+    else:
+      os.system("{} -r {} -t {} -m {} {}/{}".format(DAQ_BIN, run_number, tmp_tag, mode, TMP_DIR, fn)) 
     #Remove tmp file after run
     os.system("rm {}/{}".format(TMP_DIR, fn)) 
   input = raw_input("Runs completed. Would you like to turn off voltage? [y/n]")
