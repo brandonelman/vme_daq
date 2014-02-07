@@ -445,7 +445,6 @@ void save_config(Config * config, FILE * conf_file){
   sprintf(s, "%-23s = %10s\n", "output-folder", config->output_folder);
   fwrite(s, 1, strlen(s), conf_file);
 
-
   sprintf(s, "%s\n","[Hardware]"); //Contains all DAQ info
   fwrite(s, 1, strlen(s), conf_file);
   sprintf(s, "%-23s = %10s\n", "pmt-id-0", config->pmt_serials[0]); 
@@ -455,6 +454,8 @@ void save_config(Config * config, FILE * conf_file){
   sprintf(s, "%-23s = %10s\n", "pmt-id-2", config->pmt_serials[2]);
   fwrite(s, 1, strlen(s), conf_file);
   sprintf(s, "%-23s = %10s\n", "pmt-id-3", config->pmt_serials[3]);
+  fwrite(s, 1, strlen(s), conf_file);
+  sprintf(s, "%-23s = %10s\n", "descriptor", config->descriptor);
   fwrite(s, 1, strlen(s), conf_file);
   sprintf(s, "%-23s = %10u\n", "pmt-voltages-0", config->pmt_voltages[0]);
   fwrite(s, 1, strlen(s), conf_file);
@@ -521,8 +522,14 @@ int save_data(unsigned short ch0[2560], unsigned short ch1[2560],
    }
    else {
      for (i = 40; i < 2560; i++) {
-       sprintf(s, "%d %d %d %d %d\n", i-40, ch0[i], ch1[i], ch2[i], ch3[i]);
+       sprintf(s, "%d %d\n", i-40, ch0[i]);
        fwrite(s, 1, strlen(s), files[0]);
+       sprintf(s, "%d %d\n", i-40, ch1[i]);
+       fwrite(s, 1, strlen(s), files[1]);
+       sprintf(s, "%d %d\n", i-40, ch2[i]);
+       fwrite(s, 1, strlen(s), files[2]);
+       sprintf(s, "%d %d\n", i-40, ch3[i]);
+       fwrite(s, 1, strlen(s), files[3]);
      }
    }
   }
@@ -556,8 +563,12 @@ int save_data(unsigned short ch0[2560], unsigned short ch1[2560],
     }
     else {
       for (i = 40; i < 2560; i++) {
-        sprintf(s, "%d %d %d %d\n", i-40, ch0[i], ch1[i], ch2[i]);
+        sprintf(s, "%d %d\n", i-40, ch0[i]);
         fwrite(s, 1, strlen(s), files[0]);
+        sprintf(s, "%d %d\n", i-40, ch1[i]);
+        fwrite(s, 1, strlen(s), files[1]);
+        sprintf(s, "%d %d\n", i-40, ch2[i]);
+        fwrite(s, 1, strlen(s), files[2]);
       }
     }
   }
@@ -583,8 +594,10 @@ int save_data(unsigned short ch0[2560], unsigned short ch1[2560],
     }
     else {
       for (i = 40; i < 2560; i++) {
-        sprintf(s, "%d %d %d\n", i-40, ch0[i], ch1[i]);
+        sprintf(s, "%d %d\n", i-40, ch0[i]);
         fwrite(s, 1, strlen(s), files[0]);
+        sprintf(s, "%d %d\n", i-40, ch1[i]);
+        fwrite(s, 1, strlen(s), files[1]);
       }
     }
   }
