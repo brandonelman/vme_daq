@@ -7,7 +7,7 @@
 #define DTRIGGER_TYPE 2
 #define DTRIGGER_THRESHOLD_MV 300
 #define DNUM_PULSES 5000
-#define DMODE_REGISTER 2
+#define DMODE_REGISTER 6
 #define DFP_FREQUENCY 1
 #define DNB_OF_COLS_TO_READ 128
 #define DCHANNEL_MASK 15
@@ -561,6 +561,8 @@ int main(int argc, char **argv) {
   ret = reset_vme();
   if (reset_vme() != cvSuccess) {
     printf(" Reset failed with error %d \n", ret); CAENVME_End(handle);
+    reset_vme();
+    CAENVME_End(handle);
     return 0;
   }
 
@@ -575,6 +577,8 @@ int main(int argc, char **argv) {
   //Get Post-Trig
   ret = read_from_vme(V1729_POSTTRIG_LSB);
   if (ret != cvSuccess) {
+    reset_vme();
+    CAENVME_End(handle);
     printf(" Loading POSTTRIG_LSB failed with error %d\n", ret);
     return 0;
   }
@@ -582,6 +586,8 @@ int main(int argc, char **argv) {
 
   ret = read_from_vme(V1729_POSTTRIG_MSB);
   if (ret != cvSuccess) {
+    reset_vme();
+    CAENVME_End(handle);
     printf(" Loading POSTTRIG_MSB failed with error %d\n", ret);
     return 0;
   }
@@ -591,6 +597,7 @@ int main(int argc, char **argv) {
   // Vernier Calibration
   if (vernier(MAXVER, MINVER) != cvSuccess) {
     printf("Failed vernier calibration!\n");
+    reset_vme();
     CAENVME_End(handle);
     return 0;
   }
@@ -599,6 +606,7 @@ int main(int argc, char **argv) {
   // Get Pedestals
   if (get_pedestals(pedestals, buffer32, buffer16, mean_pedestal) == 0) {
     printf("Failed to get pedestals!\n");
+    reset_vme();
     CAENVME_End(handle);
     return 0;
   }
@@ -609,32 +617,38 @@ int main(int argc, char **argv) {
   printf("Mean pedestal for Ch. 3: %f\n", mean_pedestal[3]);
 
   // Pedestals mus tbe calculated before attaching a signal for best results 
-  printf("Please now attach your signal to the board. Press ENTER when ready.\n");
-  while(getchar() != '\n');
-  
+  //printf("Please now attach your signal to the board. Press ENTER when ready.\n");
+  //while(getchar() != '\n');
+  ret = start_acq();
+  if (ret != cvSuccess) {
+    printf("Start Acquisition failed with error %d\n", ret);
+    reset_vme();
+    CAENVME_End(handle);
+    return 0;
+  }
+
   while (interrupts < num_acquisitions) {
-
-    ret = start_acq();
-    if (ret != cvSuccess) {
-      printf("Start Acquisition failed with error %d\n", ret);
-      return 0;
-    }
-
     wait_for_interrupt();
     interrupts++;
     
     ret = read_vme_ram(buffer32);
     if (ret != cvSuccess) {
       printf("Reading VME RAM failed with error %d\n", ret);
+      reset_vme(); 
+      CAENVME_End(handle);
       return 0;
     }
 
-    ret = read_from_vme(V1729_TRIG_REC);
+    ret = read_from_vme(V1729_RAM_DATA_VME); //Read TRIG_REC from RAM to 
+                                             //automatically restart acq.
     if (ret != cvSuccess) {
-      printf("Read TRIG_REC failed with error %d\n", ret);
+      printf("Read TRIG_REC from RAM failed with error %d\n", ret);
+      reset_vme(); 
+      CAENVME_End(handle);
       return 0;
     }
     trig_rec = vme_data&0xff;
+//  ret = read_from_vme(V1729_TRIG_REC);
 
     mask_buffer(buffer32, buffer16);
 
@@ -644,9 +658,11 @@ int main(int argc, char **argv) {
             buffer16, ch0, ch1, ch2, ch3);
       
     //Save to ASCII File
+    //Catches overflow error by returning 1
     if (save_data(ch0, ch1, ch2, ch3, &config, data_files, integrate) == 1) {
       interrupts--;
       printf("Warning overflow detected! Pulse ignored!");
+      continue;
     }
   }
   

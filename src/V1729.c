@@ -4,8 +4,7 @@
 
 /* write_to_vme allows you to perform a single write cycle
    of data_to_write at the register vme_addr */
-CVErrorCodes write_to_vme(uint32_t vme_addr, uint32_t data_to_write) 
-{
+CVErrorCodes write_to_vme(uint32_t vme_addr, uint32_t data_to_write){
   CVDataWidth data_size = cvD32;
   CVAddressModifier  addr_mode = cvA32_U_DATA;
   vme_addr = CAENBASEADDRESS + vme_addr;
@@ -15,8 +14,7 @@ CVErrorCodes write_to_vme(uint32_t vme_addr, uint32_t data_to_write)
 /* read_from_vme allows you to perform a single read cycle
    at the register vme_addr which is then stored in the 
    vme_data variable */
-CVErrorCodes read_from_vme(uint32_t vme_addr)                  
-{
+CVErrorCodes read_from_vme(uint32_t vme_addr){
   CVDataWidth data_size = cvD32;
   CVAddressModifier addr_mode = cvA32_U_DATA;
   vme_addr = CAENBASEADDRESS + vme_addr;
@@ -26,20 +24,17 @@ CVErrorCodes read_from_vme(uint32_t vme_addr)
 /* reset_vme() sends a reset order to the board. This does 
    NOT change the values currently stored in the registers
    of the board, but rather simply resets the current state */
-CVErrorCodes reset_vme()
-{
+CVErrorCodes reset_vme(){
   return write_to_vme(V1729_RESET_BOARD, 1); 
 }
 
 /* Places the V1729A Board in "acquisition" mode */
-CVErrorCodes start_acq()
-{
+CVErrorCodes start_acq(){
   return write_to_vme(V1729_START_ACQUISITION, 1); 
 }
 
 /* Mask Buffer places the data stored in buffer32 into buffer16 */
-void mask_buffer(unsigned int buffer32[V1729_RAM_DEPH/2], unsigned int buffer16[V1729_RAM_DEPH])
-{
+void mask_buffer(unsigned int buffer32[V1729_RAM_DEPH/2], unsigned int buffer16[V1729_RAM_DEPH]){
   int i;
   int mask = 0x3fff; /*14 bit*/
   for (i = 0; i < V1729_RAM_DEPH; i += 2) {
@@ -49,16 +44,13 @@ void mask_buffer(unsigned int buffer32[V1729_RAM_DEPH/2], unsigned int buffer16[
 }
 
 /* Standard way of discovering interrupt by scanning register. */
-void wait_for_interrupt(void)
-{
+void wait_for_interrupt(void){
   unsigned int interrupt = 0; /* When 1 an interrupt has successfully been read */
                               /* When 3 there was an overflow of the buffer so your data is bad */
-  while(interrupt != 0x1)
-  {
+  while(interrupt != 0x1){
     read_from_vme(V1729_INTERRUPT); 
     interrupt = vme_data&0x3;
-    if (interrupt == 0x3 || interrupt == 0x2)
-    {
+    if (interrupt == 0x3 || interrupt == 0x2){
       printf("Overflow detected!");
       interrupt = 0;
     }
@@ -67,28 +59,16 @@ void wait_for_interrupt(void)
 
 /* Read the RAM of the ADC by realizing N successive readings of the 
    RAM register. */
-CVErrorCodes read_vme_ram(unsigned int buffer32[V1729_RAM_DEPH/2])
-{
+CVErrorCodes read_vme_ram(unsigned int buffer32[V1729_RAM_DEPH/2]){
   int i;
-
-  for (i =0; i < V1729_RAM_DEPH/2; i++)
-  {
+  for (i =0; i < V1729_RAM_DEPH/2; i++){
     CVErrorCodes ret = read_from_vme(V1729_RAM_DATA_VME);
-    if (ret != cvSuccess)
-    {
+    if (ret != cvSuccess){
       printf("Failed reading from RAM at iteration %d", i); 
       return ret;
     }
-
     buffer32[i] = vme_data; 
-    if (buffer32[i] > 1900000000) /*Protects from overflow acquisitions! 
-                                0xea60 = 60000*/
-    {
-      printf("Overflow: Buffer32[i] = %d", buffer32[i]);
-      return cvGenericError;
-    }   
   }
-
   return cvSuccess;
 }
 
@@ -189,26 +169,22 @@ CVErrorCodes vernier(unsigned int MAXVER[4], unsigned int MINVER[4]) {
 
   /*Resetting NB_OF_COLS_TO_READ, CHANNEL_MASK, TRIGGER_TYPE */
   ret = write_to_vme(V1729_NB_OF_COLS_TO_READ, old_cols);
-  if (ret != cvSuccess)
-  {
+  if (ret != cvSuccess){
     printf(" Resetting num. of columns failed with error: %d \n", ret);
     return ret;
   }  
 
   ret = write_to_vme(V1729_TRIGGER_TYPE, trig_type);
-  if (ret != cvSuccess)
-  {
+  if (ret != cvSuccess){
     printf(" Resetting TRIGGER_TYPE failed with error: %d \n", ret);
     return ret;
   }  
 
   ret = write_to_vme(V1729_CHANNEL_MASK, ch_mask);
-  if (ret != cvSuccess)
-  {
+  if (ret != cvSuccess){
     printf(" Resetting CHANNEL_MASK failed with error: %d \n", ret);
     return ret;
   }  
-  
   return cvSuccess;
 }
 
@@ -219,10 +195,7 @@ CVErrorCodes vernier(unsigned int MAXVER[4], unsigned int MINVER[4]) {
 int get_pedestals(int pedestals[V1729_RAM_DEPH], 
                   unsigned int buffer32[V1729_RAM_DEPH/2],
                   unsigned int buffer16[V1729_RAM_DEPH],
-                  float mean_pedestal[4]) 
-
-{
-
+                  float mean_pedestal[4]) {
   int i,j,k; 
   int ch; /*Channels*/
   uint32_t trig_type, ch_mask, old_cols; /*stores values for resetting later*/
@@ -237,8 +210,7 @@ int get_pedestals(int pedestals[V1729_RAM_DEPH],
   /* Saving value of TRIGGER_TYPE register for resetting later */
   printf("    Saving value of TRIGGER_TYPE for resetting later..");
   ret = read_from_vme(V1729_TRIGGER_TYPE);
-  if (ret != cvSuccess)
-  {
+  if (ret != cvSuccess){
     printf(" Loading TRIGGER_TYPE failed with error: %d \n", ret);
     return 0;
   }  
@@ -248,8 +220,7 @@ int get_pedestals(int pedestals[V1729_RAM_DEPH],
   /* Saving value of CHANNEL_MASK register for resetting later */
   printf("    Saving value of CHANNEL_MASK for resetting later..");
   ret = read_from_vme(V1729_CHANNEL_MASK);
-  if (ret != cvSuccess)
-  {
+  if (ret != cvSuccess){
     printf(" Loading CHANNEL_MASK failed with error: %d \n", ret);
     return 0;
   }  
@@ -259,8 +230,7 @@ int get_pedestals(int pedestals[V1729_RAM_DEPH],
   /* Saving V1729_NB_OF_COLS_TO_READ's original value for resetting later */
   printf("    Saving number of columns for resetting later..");
   ret = read_from_vme(V1729_NB_OF_COLS_TO_READ);
-  if (ret != cvSuccess)
-  {
+  if (ret != cvSuccess){
     printf(" Loading num. of columns failed with error: %d \n", ret);
     return 0;
   }  
@@ -271,8 +241,7 @@ int get_pedestals(int pedestals[V1729_RAM_DEPH],
   /* 128 Columns */
   printf("    Setting number of columns to read to 128...");
   ret = write_to_vme(V1729_NB_OF_COLS_TO_READ, 0x80); 
-  if (ret != cvSuccess)
-  {
+  if (ret != cvSuccess){
     printf(" Changing num. of columns failed with error: %d \n", ret);
     return 0;
   }  
@@ -283,8 +252,7 @@ int get_pedestals(int pedestals[V1729_RAM_DEPH],
   printf("    Setting trigger to random software for finding pedestals..."); 
   ret = write_to_vme(V1729_TRIGGER_TYPE, 0x8);  
   
-  if (ret != cvSuccess)
-  {
+  if (ret != cvSuccess){
     printf(" Setting trigger type failed with error: %d \n", ret);
     return 0;
   }  
@@ -293,8 +261,7 @@ int get_pedestals(int pedestals[V1729_RAM_DEPH],
   /*Sets mask to allow 4 Channels */
   printf("    Setting mask to allow 4 Channels for finding pedestals..."); 
   ret = write_to_vme(V1729_CHANNEL_MASK, 15); 
-  if (ret != cvSuccess)
-  {
+  if (ret != cvSuccess){
     printf(" Setting channel mask failed with error: %d \n", ret);
     return 0;
   }  
@@ -304,12 +271,10 @@ int get_pedestals(int pedestals[V1729_RAM_DEPH],
    
   /*Doing 50 acquisition runs to get pedestals.*/
   printf("    Starting 50 acquisition sequences to find mean pedestals\n"); 
-  for (i = 0; i < 50; i++)
-  { 
+  for (i = 0; i < 50; i++){ 
     /* Start Acquisition */
     ret = start_acq(); 
-    if (ret != cvSuccess)
-    {
+    if (ret != cvSuccess){
       printf("        Sending Start Acquisition signal failed with error %d\n", ret);
       reset_vme();
       return 0;
@@ -394,8 +359,7 @@ void reorder(unsigned int trig_rec, unsigned int post_trig,
   
   end_cell = (20*(128-trig_rec+post_trig) + 1) % 2560;
 
-  for (i = 0; i < 2560; i++)
-  {
+  for (i = 0; i < 2560; i++){
     j = (2560+i+end_cell-cor_ver+20) % 2560;
     ch3[i] = buffer16[4*j+12];
     ch2[i] = buffer16[4*j+13]; 
